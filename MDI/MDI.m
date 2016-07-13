@@ -1023,7 +1023,7 @@ for j = 1:K
     fHandle = fHandles{j};
     
     % Declare some variables for the particle filter
-    M = 1;
+    M =massParam(1, j);
     a = 0.5;
     mu = 0;
     sigmasq = 1;
@@ -1146,6 +1146,7 @@ for j = 1:K
         sumysq = sumysq(1, partstar);
         nj = nj(1, partstar);
         sumv = sumv(partstar);
+        
         s(1:i, j) = transpose(sstar(partstar, 1:i));
 
 
