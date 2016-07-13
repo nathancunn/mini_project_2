@@ -1037,7 +1037,7 @@ for j = 1:K
     sstar = zeros(numbofparts, nGenes);
     %%LOOP OVER ALL GENES IN EACH TYPE
     for i = 1:nGenes
-        disp(['i = ' num2str(i)]);
+        % disp(['i = ' num2str(i)]);
         % This is where the particle filter needs to come in
         % Loop over each of the particles
         % First step is draw the s values
@@ -1047,7 +1047,7 @@ for j = 1:K
         % Need to update fprob using the particle filter
         %%FIND USEFUL VALUES
         oldLabel = s(i,j);
-        disp(['oldlabel' num2str(oldLabel)]);
+        % disp(['oldlabel' num2str(oldLabel)]);
         prob     = gammaMatrix(:, j);%%conditional prior
         %%We need to find the labels of gene i in the other contexts:
         %%We consider all possibilities for the label of gene i
@@ -1073,7 +1073,26 @@ for j = 1:K
         %%the removal means our proposed marginal likelihood for the
         %current cluster will be the inverse of what we want, but this
         %is corrected for below
-        
+        for ind = occupiedClusters
+        if(ind == oldLabel), proposedClustersForThisContext = AddRemoveItem('removeGene', proposedClustersForThisContext, ind, i, dataForThisContext, j);
+        else                 proposedClustersForThisContext = AddRemoveItem('addGene',    proposedClustersForThisContext, ind, i, dataForThisContext, j);, end
+        % We have inverted a covariance matrix, so should not let this go to waste...
+          if(timeCourseSwitches(j))
+              nGenesInProposedCluster = proposedClustersForThisContext(ind).nGenes;
+              if(nGenesInProposedCluster > 0)
+                  clustersForThisContext(ind).covarianceMatrixInverses(nGenesInProposedCluster) = ...
+                      proposedClustersForThisContext(ind).covarianceMatrixInverses(nGenesInProposedCluster);
+              end
+          end
+        end
+        %%WE ALSO NEED THE POSSIBILITY OF ADDING THE ITEM TO AN UNOCCUPIED CLUSTER
+        unoccupiedClusters     = setdiff(allComponents,occupiedClusters);
+        firstUnoccupiedCluster = unoccupiedClusters(1);
+        if(timeCourseSwitches(j))
+            proposedClustersForThisContext(firstUnoccupiedCluster).covarianceMatrixInverses(1:nGenes) = struct('invertedCovarianceMatrix', [], 'determinant', []);
+        end
+        proposedClustersForThisContext                     = AddRemoveItem('addGene', proposedClustersForThisContext, firstUnoccupiedCluster, i, dataForThisContext, j);
+        proposedClustersForThisContext(unoccupiedClusters) = proposedClustersForThisContext(firstUnoccupiedCluster);
         % Loop over the particles
         for it = 1:numbofparts
             if(i == 1)
@@ -1084,12 +1103,12 @@ for j = 1:K
                 sstar(it, i) = i;
             else
                 prob = [nj{1, it} M] ./ (sum(nj{1, it}) + M);
-                disp(['m' num2str(M)]);
-                disp(['prob = ' num2str(prob)]);
+                % disp(['m' num2str(M)]);
+                % disp(['prob = ' num2str(prob)]);
                 mustar = [(mu / (1 - a) + sumy{1, it} / a) ./ (nj{1, it} / a + 1 / (1 - a)) mu];
                 varstar = [sigmasq ./ (nj{1, it} / a + 1 / (1 - a)) sigmasq*(1-a)];
                 logprob = - 0.5 * (dataForThisContext(i) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
-                disp(['logprob' num2str(logprob)]);
+                % disp(['logprob' num2str(logprob)]);
                 fprob = cumsum(prob .* exp(logprob - max(logprob)));
                 logweight(it) = log(fprob(end)) + max(logprob);
                 fprob = fprob / fprob(end);
@@ -1111,7 +1130,7 @@ for j = 1:K
         end
         fprob = cumsum(exp(logweight - max(logweight)));
         fprob = fprob / fprob(end);
-        disp(['fprob = ' num2str(fprob)]);
+        % disp(['fprob = ' num2str(fprob)]);
         u1 = rand / numbofparts;
         m = 1;
         it = 1;
@@ -1128,29 +1147,9 @@ for j = 1:K
         nj = nj(1, partstar);
         sumv = sumv(partstar);
         s(1:i, j) = transpose(sstar(partstar, 1:i));
+
+
 %{
-    for ind = occupiedClusters
-        if(ind == oldLabel), proposedClustersForThisContext = AddRemoveItem('removeGene', proposedClustersForThisContext, ind, i, dataForThisContext, j);
-        else                 proposedClustersForThisContext = AddRemoveItem('addGene',    proposedClustersForThisContext, ind, i, dataForThisContext, j);, end
-        % We have inverted a covariance matrix, so should not let this go to waste...
-        if(timeCourseSwitches(j))
-            nGenesInProposedCluster = proposedClustersForThisContext(ind).nGenes;
-            if(nGenesInProposedCluster > 0)
-                clustersForThisContext(ind).covarianceMatrixInverses(nGenesInProposedCluster) = ...
-                    proposedClustersForThisContext(ind).covarianceMatrixInverses(nGenesInProposedCluster);
-            end
-        end
-    end
-
-    %%WE ALSO NEED THE POSSIBILITY OF ADDING THE ITEM TO AN UNOCCUPIED CLUSTER
-    unoccupiedClusters     = setdiff(allComponents,occupiedClusters);
-    firstUnoccupiedCluster = unoccupiedClusters(1);
-
-    if(timeCourseSwitches(j))
-        proposedClustersForThisContext(firstUnoccupiedCluster).covarianceMatrixInverses(1:nGenes) = struct('invertedCovarianceMatrix', [], 'determinant', []);
-    end
-    proposedClustersForThisContext                     = AddRemoveItem('addGene', proposedClustersForThisContext, firstUnoccupiedCluster, i, dataForThisContext, j);
-    proposedClustersForThisContext(unoccupiedClusters) = proposedClustersForThisContext(firstUnoccupiedCluster);
     %%COMPUTE THE MARGINAL LIKELIHOOD RATIOS
     oldLogMarginalLikelihoods         = [clustersForThisContext.logMarginalLikelihood];
     newLogMarginalLikelihoods         = [proposedClustersForThisContext.logMarginalLikelihood];
@@ -1177,9 +1176,8 @@ for j = 1:K
     unoccupiedClusters     = setdiff(allComponents,occupiedClusters);
     firstUnoccupiedCluster = unoccupiedClusters(1);
       
-    
+    ind = s(i, j);
     if(s(i,j) ~= oldLabel)
-        proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, s(i, j), i, dataForThisContext, j);
         clustersForThisContext(oldLabel) = proposedClustersForThisContext(oldLabel);
         clustersForThisContext(s(i,j))   = proposedClustersForThisContext(s(i,j));
     end
