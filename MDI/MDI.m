@@ -1105,6 +1105,7 @@ for j = 1:K
                 prob = [nj{1, it} M] ./ (sum(nj{1, it}) + M);
                 % disp(['m' num2str(M)]);
                 % disp(['prob = ' num2str(prob)]);
+                % Might want to draw these mu star values from the previously allocated clustering?
                 mustar = [(mu / (1 - a) + sumy{1, it} / a) ./ (nj{1, it} / a + 1 / (1 - a)) mu];
                 varstar = [sigmasq ./ (nj{1, it} / a + 1 / (1 - a)) sigmasq*(1-a)];
                 logprob = - 0.5 * (dataForThisContext(i) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
@@ -1146,7 +1147,9 @@ for j = 1:K
         sumysq = sumysq(1, partstar);
         nj = nj(1, partstar);
         sumv = sumv(partstar);
-        
+        % Here we need to pick out a particular particle surely?
+        % But then future iterations of the particle filter will be based only on a single particle
+        % Then perhaps the algorithm should only update the clusterstruct after the particles have been fully drawn?   
         s(1:i, j) = transpose(sstar(partstar, 1:i));
 
 
