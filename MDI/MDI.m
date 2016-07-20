@@ -1006,9 +1006,10 @@ global K nGenes N phiIndexMatrix finalIndexMatrix fHandles ...
     gaussianSwitches poissonSwitches nbSwitches massParam
 allComponents = 1:N;
 % Start with a fixed number of particles allow specification later
+NGGlambda = 1;
 numbofparts = 1;
-logweight = zeros(1, numbofparts);
-partstar = zeros(1, numbofparts);
+gamma = 0.1;
+
 
 %%LOOP OVER ALL 'K' DATA TYPES
 for j = 1:K
@@ -1023,7 +1024,15 @@ for j = 1:K
     fHandle = fHandles{j};
     
     % Declare some variables for the particle filter
-    M =massParam(1, j);
+    sumy = cell(1, numbofparts);
+    nj = cell(1, numbofparts);
+    sumv = zeros(numbofparts, 1);
+    % Set a new s for the particle filter called spart
+    spart = zeros(numbofparts, nGenes); % Might need a K index here
+    logweight = zeros(1, numbofparts);
+    partstar = zeros(1, numbofparts);
+    %M = massParam(1, j);
+    M = 1;
     a = 0.5;
     mu = 0;
     sigmasq = 1;
@@ -1033,11 +1042,9 @@ for j = 1:K
     sumysq = cell(1, numbofparts);
     nj = cell(1, numbofparts);
     sumv = zeros(numbofparts, 1);
-    % Need to declare s...?
-    sstar = zeros(numbofparts, nGenes);
     %%LOOP OVER ALL GENES IN EACH TYPE
     for i = 1:nGenes
-        % disp(['i = ' num2str(i)]);
+        disp(['i = ' num2str(i)]);
         % This is where the particle filter needs to come in
         % Loop over each of the particles
         % First step is draw the s values
@@ -1069,14 +1076,67 @@ for j = 1:K
         %%NOW FIND THE "LIKELIHOOD" TERM
         proposedClustersForThisContext = clustersForThisContext;
         occupiedClusters               = transpose(unique(s(:,j)));
+        %% Begin with the particle filter.
+        %% Already looping over the observations, now need to loop over the particles doing a and b
+        %% a Sample an allocation for s, based on the s so far and the data including the current data from
+        %% q(k) prop. to wk  k* (yt | s*(1:t-1)) for k between 1 and D (max number of components
+        %% b Calc the unnormalised weight eps(i) = sum(wk kk (yt|s1:(t-1))
+        %% Then reweight the particles according to the weights
+        %% Problem of how to store all the different particles though. Do we just keep them all?
+        %% Loop over particles
+        for it = 1:numbofparts
+                % Sample vn
+                sumv(it) = sumv(it) + samplev_NGG(NGGlambda, sumv(it), i, length(nj{1, it}), M, gamma);    
+            if ( i == 1 ) % If we're at the first data point
+                sumy{1, it} = dataForThisContext(i); % Cumsum of data is just first data point. Sumy stores the sum of values in each cluster
+                nj{1, it} = 1; % Contains the sizes of each cluster allocation
+                logweight(it) = 0;
+                spart(it, i) = 1; % Assign to cluster 1
+            else
+                prob = [(nj{1, it}-gamma)  (M*(NGGlambda + sumv(it))^gamma)]; 
+                % Prob of assigning to each cluster? Maybe replace with gamma matrix?
+                prob = prob / sum(prob); % Normalising
+                % Reweighting the mu between the prior and the observed? Gives two values
+                mustar = [(sumy{1, it} / a + mu / (1 - a)) ./ (nj{1, it} / a + 1 / (1 - a)) mu];
+                % Similar step here
+                varstar = [sigmasq ./ (nj{1, it} / a + 1 / (1 - a)) sigmasq*(1-a)];
+                logprob = - 0.5 * (dataForThisContext(i) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
+                fprob = cumsum(prob .* exp(logprob - max(logprob)));
+                logweight(it) = logweight(it) + log(fprob(end)) + max(logprob);
+                fprob = fprob / fprob(end);
+                u1 = rand;
+                sstar = 1;
+                while ( fprob(sstar) < u1 )
+                    sstar = sstar + 1;
+                end
+                if ( sstar <= length(nj{1, it}) )
+                    spart(it, i) = sstar;
+                    nj{1, it}(spart(it, i)) = nj{1, it}(spart(it, i)) + 1;
+                    sumy{1, it}(spart(it, i)) = sumy{1, it}(spart(it, i)) + dataForThisContext(i);
+                else
+                    spart(it, i) = length(nj{1, it}) + 1;
+                    nj{1, it} = [nj{1, it} 1];
+                    sumy{1, it} = [sumy{1, it} dataForThisContext(i)];
+                end
+            end
+        end
+        s(i, j) = spart(1, i);
+        disp(['s = ' num2str(spart)]);
+        % Add the item to the cluster in the add/remove cluster struct thing
         %%ADD/REMOVE ITEMS FOR PROPOSED MOVES
         %%the removal means our proposed marginal likelihood for the
         %current cluster will be the inverse of what we want, but this
         %is corrected for below
+        % Would make sense here to have each particle have an entry in this
+        % Might be costly computationally
+        %{
         for ind = occupiedClusters
         if(ind == oldLabel), proposedClustersForThisContext = AddRemoveItem('removeGene', proposedClustersForThisContext, ind, i, dataForThisContext, j);
         else                 proposedClustersForThisContext = AddRemoveItem('addGene',    proposedClustersForThisContext, ind, i, dataForThisContext, j);, end
+        %}
         % We have inverted a covariance matrix, so should not let this go to waste...
+      
+%{            
           if(timeCourseSwitches(j))
               nGenesInProposedCluster = proposedClustersForThisContext(ind).nGenes;
               if(nGenesInProposedCluster > 0)
@@ -1093,64 +1153,12 @@ for j = 1:K
         end
         proposedClustersForThisContext                     = AddRemoveItem('addGene', proposedClustersForThisContext, firstUnoccupiedCluster, i, dataForThisContext, j);
         proposedClustersForThisContext(unoccupiedClusters) = proposedClustersForThisContext(firstUnoccupiedCluster);
-        % Loop over the particles
-        for it = 1:numbofparts
-            if(i == 1)
-                sumy{1, it} = dataForThisContext(i);
-                sumysq{1, it} = dataForThisContext(i) ^ 2;
-                nj{1, it} = 1;
-                logweight(it) = 0;
-                sstar(it, i) = i;
-            else
-                prob = [nj{1, it} M] ./ (sum(nj{1, it}) + M);
-                % disp(['m' num2str(M)]);
-                % disp(['prob = ' num2str(prob)]);
-                % Might want to draw these mu star values from the previously allocated clustering?
-                mustar = [(mu / (1 - a) + sumy{1, it} / a) ./ (nj{1, it} / a + 1 / (1 - a)) mu];
-                varstar = [sigmasq ./ (nj{1, it} / a + 1 / (1 - a)) sigmasq*(1-a)];
-                logprob = - 0.5 * (dataForThisContext(i) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
-                % disp(['logprob' num2str(logprob)]);
-                fprob = cumsum(prob .* exp(logprob - max(logprob)));
-                logweight(it) = log(fprob(end)) + max(logprob);
-                fprob = fprob / fprob(end);
-                u1 = rand;
-                sstar(it, i) = 1;
-                while ( fprob(sstar(it, i)) < u1 )
-                    sstar(it, i) = sstar(it, i) + 1;
-                end
-                if ( sstar(it, i) == length(nj{1, it}) + 1 )
-                    nj{1, it} = [nj{1, it} 1];
-                    sumy{1, it} = [sumy{1, it} dataForThisContext(i)];
-                    sumysq{1, it} = [sumysq{1, it} dataForThisContext(i)^2];
-                else
-                    nj{1, it}(sstar(it, i)) = nj{1, it}(sstar(it, i)) + 1;
-                    sumy{1, it}(sstar(it, i)) = sumy{1, it}(sstar(it, i)) + dataForThisContext(i);
-                    sumysq{1, it}(sstar(it, i)) = sumysq{1, it}(sstar(it, i)) + dataForThisContext(i)^2;
-                end
-            end
+%}
+        if(s(i, j) ~= oldLabel) 
+            proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, oldLabel, i, dataForThisContext, j);
         end
-        fprob = cumsum(exp(logweight - max(logweight)));
-        fprob = fprob / fprob(end);
-        % disp(['fprob = ' num2str(fprob)]);
-        u1 = rand / numbofparts;
-        m = 1;
-        it = 1;
-        while (m <= numbofparts )
-            while ( (u1 < fprob(m)) && (m <= numbofparts) )
-                partstar(it) = m;
-                u1 = u1 + 1 / numbofparts;
-                it = it + 1;
-            end
-            m = m + 1;
-        end
-        sumy = sumy(1, partstar);
-        sumysq = sumysq(1, partstar);
-        nj = nj(1, partstar);
-        sumv = sumv(partstar);
-        % Here we need to pick out a particular particle surely?
-        % But then future iterations of the particle filter will be based only on a single particle
-        % Then perhaps the algorithm should only update the clusterstruct after the particles have been fully drawn?   
-        s(1:i, j) = transpose(sstar(partstar, 1:i));
+
+ 
 
 
 %{

@@ -1,9 +1,9 @@
 function MDISim(uniqueID)
 
 
-uniqueIdentifier = uniqueID;
+uniqueIdentifier = 2;
 nComponents = 50;
-nSamples    = 10000;
+nSamples    = 100;
 fileName1   = 'Data/MDItestdata1.csv';
 fileName2   = 'Data/MDItestdata2.csv';
 fileName3   = 'Data/MDItestdata3.csv';
