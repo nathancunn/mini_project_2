@@ -71,7 +71,8 @@ switch mode
   [clusterStruct.featureParameters]     = deal(featureParameters);
   % Initialise Context 1 clusters:
   nStartingClusters = min(ceil(log(nGenesOverall)), maxNumberOfComponents);
-  nStartingClusters = nStartingClusters + randi(nStartingClusters);
+  % Why is this done?
+  % nStartingClusters = nStartingClusters + randi(nStartingClusters);
   clusterIDs        = random('unid', nStartingClusters, 1, nGenesOverall); %row vector
   
   for i = 1:maxNumberOfComponents

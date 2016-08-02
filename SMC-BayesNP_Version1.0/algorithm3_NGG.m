@@ -20,17 +20,21 @@ for i = 1:n
         sumv(it) = sumv(it) + samplev_NGG(NGGlambda, sumv(it), i, length(nj{1, it}), M, gamma);
         
         if ( i == 1 )
-            sumy{1, it} = data(i);
+            sumy{1, it} = transpose(data(i, :));
             nj{1, it} = 1;
             logweight(it) = 0;
             s(it, i) = 1;
         else
             prob = [(nj{1, it}-gamma)  (M*(NGGlambda + sumv(it))^gamma)];
             prob = prob / sum(prob);
-
+            
             mustar = [(sumy{1, it} / a + mu / (1 - a)) ./ (nj{1, it} / a + 1 / (1 - a)) mu];
             varstar = [sigmasq ./ (nj{1, it} / a + 1 / (1 - a)) sigmasq*(1-a)];
-            logprob = - 0.5 * (data(i) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
+            logprob = zeros(size(mustar, 1), size(mustar, 2))
+            for g  = 1:size(mustar, 2)
+            logprob(:,g) = - 0.5 * (transpose(data(i, :)) - mustar(:, g)).^2 ./ (a * sigmasq + varstar(:, g)) - 0.5 * log(a * sigmasq + varstar(:, g));
+            end
+            logprob = prod(logprob);
             fprob = cumsum(prob .* exp(logprob - max(logprob)));
             logweight(it) = logweight(it) + log(fprob(end)) + max(logprob);
             fprob = fprob / fprob(end);
@@ -42,7 +46,7 @@ for i = 1:n
             if ( sstar <= length(nj{1, it}) )
                 s(it, i) = sstar;
                 nj{1, it}(s(it, i)) = nj{1, it}(s(it, i)) + 1;
-                sumy{1, it}(s(it, i)) = sumy{1, it}(s(it, i)) + data(i);
+                sumy{1, it}(:, s(it, i)) = sumy{1, it}(:, s(it, i)) + data(i);
             else
                 s(it, i) = length(nj{1, it}) + 1;
                 nj{1, it} = [nj{1, it} 1];
@@ -132,4 +136,5 @@ for i = 1:n
         s = s(partstar, :);        
     end
 end
+
 

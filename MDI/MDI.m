@@ -390,6 +390,7 @@ for it = 1:numbofits
             clusterContainer(k).clusterStruct = feval(fHandles{k}, clusterContainer(k).clusterStruct, 'featureSelection', s(:,k));
         end
     end
+%{
     %%----------------------------------------------------------------------
     %% SPLIT-MERGE MCMC STEP -----------------------------------------------
     %%----------------------------------------------------------------------
@@ -412,6 +413,7 @@ for it = 1:numbofits
             end
         end
     end
+%}
     %%----------------------------------------------------------------------
     %% WRITE THE PHIS, MASS PARAMETERS AND CLUSTERIDS TO FILE --------------
     %%----------------------------------------------------------------------
@@ -1007,7 +1009,7 @@ global K nGenes N phiIndexMatrix finalIndexMatrix fHandles ...
 allComponents = 1:N;
 % Start with a fixed number of particles allow specification later
 NGGlambda = 1;
-numbofparts = 1;
+numbofparts = 10;
 gamma = 0.1;
 
 
@@ -1042,11 +1044,10 @@ for j = 1:K
     sumysq = cell(1, numbofparts);
     nj = cell(1, numbofparts);
     sumv = zeros(numbofparts, 1);
-
+    disp(gammaMatrix(:, j));
     % Some specifications for the finite mixture model
     sumy(1, :) = {zeros(1, N)};
     nj(1, :) = {zeros(1, N)};
-    disp(['ncomp = ' num2str(N)]);
     %%LOOP OVER ALL GENES IN EACH TYPE
     for i = 1:nGenes
         % disp(['i = ' num2str(i)]);
@@ -1106,11 +1107,13 @@ for j = 1:K
                 % Prob of assigning to each cluster? Maybe replace with gamma matrix?
                 prob = prob / sum(prob); % Normalising
                 % Reweighting the mu between the prior and the observed? Gives two values
-                % mustar = [(sumy{1, part} / a + mu / (1 - a)) ./ (nj{1, part} / a + 1 / (1 - a)) mu];
-                %varstar = [sigmasq ./ (nj{1, part} / a + 1 / (1 - a)) sigmasq*(1-a)];
                 mustar = (sumy{1, part} / a + mu / (1 - a)) ./ (nj{1, part} / a + 1 / (1 - a));
                 varstar = sigmasq ./ (nj{1, part} / a + 1 / (1 - a));
-                logprob = - 0.5 * (dataForThisContext(i) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
+                for g  = 1:size(mustar, 2)
+                logprob(:,g) = - 0.5 * ((dataForThisContext(i)) - mustar(:, g)).^2 ./ (a * sigmasq + varstar(:, g)) - 0.5 * log(a * sigmasq + varstar(:, g));
+                end
+                %logprob = - 0.5 * (dataForThisContext(i, :) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
+                logprob = prod(logprob);
                 fprob = cumsum(prob .* exp(logprob - max(logprob)));
                 logweight(part) = logweight(part) + log(fprob(end)) + max(logprob);
                 fprob = fprob / fprob(end);
@@ -1119,26 +1122,15 @@ for j = 1:K
                 while ( fprob(sstar) < u1 )
                     sstar = sstar + 1;
                 end
-                % Don't need this about adding new clusters
-                %{
-                if ( sstar <= length(nj{1, part}) )
-                    spart(part, i) = sstar;
-                    nj{1, part}(spart(part, i)) = nj{1, part}(spart(part, i)) + 1;
-                    sumy{1, part}(spart(part, i)) = sumy{1, part}(spart(part, i)) + dataForThisContext(i);
-                else
-                    spart(part, i) = length(nj{1, part}) + 1;
-                    nj{1, part} = [nj{1, part} 1];
-                    sumy{1, part} = [sumy{1, part} dataForThisContext(i)];
-                end
-                %}
+
                 spart(part, i) = sstar;
                 nj{1, part}(spart(part, i)) = nj{1, part}(spart(part, i)) + 1;
                 sumy{1, part}(spart(part, i)) = sumy{1, part}(spart(part, i)) + dataForThisContext(i);
 
             end
         end
-        s(i, j) = spart(1, i);
-        % disp(['s = ' num2str(s)]);
+        %s{i, j} = spart(:, i);
+        %disp(['s = ' num2str(s)]);
         % Add the item to the cluster in the add/remove cluster struct thing
         %%ADD/REMOVE ITEMS FOR PROPOSED MOVES
         %%the removal means our proposed marginal likelihood for the
@@ -1171,11 +1163,14 @@ for j = 1:K
         proposedClustersForThisContext                     = AddRemoveItem('addGene', proposedClustersForThisContext, firstUnoccupiedCluster, i, dataForThisContext, j);
         proposedClustersForThisContext(unoccupiedClusters) = proposedClustersForThisContext(firstUnoccupiedCluster);
 %}
-        if(s(i, j) ~= oldLabel) 
-            proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, s(i, j), i, dataForThisContext, j);
-            clustersForThisContext(oldLabel) = proposedClustersForThisContext(oldLabel);
-            clustersForThisContext(s(i,j))   = proposedClustersForThisContext(s(i,j));
-        end
+
+
+
+
+
+
+
+
 
  
 
@@ -1214,6 +1209,26 @@ for j = 1:K
         clustersForThisContext(s(i,j))   = proposedClustersForThisContext(s(i,j));
     end
 %}
+end
+ari = zeros(1, numbofparts);
+  for i1 = 1:(numbofparts - 1)
+    for j1 = (1+i1):numbofparts
+      ri = rand_index(spart(:,i1), spart(:, j1), 'adjusted') / (numbofparts - 1);
+      ari(1, i1) = ari(1, i1) + ri;
+      ari(1, j1) = ari(1, j1) + ri;
+    end
+  end
+ties = find(ari == max(ari));
+partInd = ties(randi(length(ties)));
+oldLabel = s;
+s(:, j) = spart(partInd, :);
+
+for i = 1:nGenes
+  if(s(i, j) ~= oldLabel(i, j))
+    proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, s(i, j), i, dataForThisContext, j);
+    clustersForThisContext(oldLabel(i, j)) = proposedClustersForThisContext(oldLabel(i, j));
+    clustersForThisContext(s(i,j))   = proposedClustersForThisContext(s(i,j));
+  end
 end
 clusterContainer(j).clusterStruct = clustersForThisContext;
 end
