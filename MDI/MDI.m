@@ -1009,7 +1009,7 @@ global K nGenes N phiIndexMatrix finalIndexMatrix fHandles ...
 allComponents = 1:N;
 % Start with a fixed number of particles allow specification later
 NGGlambda = 1;
-numbofparts = 10;
+numbofparts = 100;
 gamma = 0.1;
 
 
@@ -1025,18 +1025,14 @@ for j = 1:K
     dataForThisContext        = clusterContainer(j).data;
     fHandle = fHandles{j};
     
-    % Declare some variables for the particle filter
-    sumy = cell(1, numbofparts);
-    nj = cell(1, numbofparts);
-    sumv = zeros(numbofparts, 1);
     % Set a new s for the particle filter called spart
-    spart = zeros(numbofparts, nGenes); % Might need a K index here
+    spart = zeros(numbofparts, nGenes);
     logweight = zeros(1, numbofparts);
     partstar = zeros(1, numbofparts);
-    %M = massParam(1, j);
     M = 1;
     a = 0.5;
-    mu = 0;
+    mu = vertcat(clustersForThisContext.empiricalMeans);
+    
     sigmasq = 1;
     % Use nGenes for n
     % Make these greater dimension to allow for the multiple datasets; not sure yet
@@ -1044,9 +1040,8 @@ for j = 1:K
     sumysq = cell(1, numbofparts);
     nj = cell(1, numbofparts);
     sumv = zeros(numbofparts, 1);
-    disp(gammaMatrix(:, j));
     % Some specifications for the finite mixture model
-    sumy(1, :) = {zeros(1, N)};
+    sumy(1, :) = {zeros(N, size(dataForThisContext, 2))};
     nj(1, :) = {zeros(1, N)};
     %%LOOP OVER ALL GENES IN EACH TYPE
     for i = 1:nGenes
@@ -1092,28 +1087,30 @@ for j = 1:K
         %% Then reweight the particles according to the weights
         %% Problem of how to store all the different particles though. Do we just keep them all?
         %% Loop over particles
+        %prob = transpose(prob); 
         for part = 1:numbofparts
                 % Sample vn
                 sumv(part) = sumv(part) + samplev_NGG(NGGlambda, sumv(part), i, length(nj{1, part}), M, gamma);    
             if ( i == 1 ) % If we're at the first data point
-                sumy{1, part}(1) = dataForThisContext(i);
+                sumy{1, part}(1, :) = dataForThisContext(i, :);
                 nj{1, part}(1) = 1;
                 logweight(part) = 0;
                 spart(part, i) = 1; 
             else
                 % Prob is just going to be the prob calc'd above
                 % prob = [(nj{1, part}-gamma)  (M*(NGGlambda + sumv(part))^gamma)];
-                prob = transpose(prob); 
                 % Prob of assigning to each cluster? Maybe replace with gamma matrix?
                 prob = prob / sum(prob); % Normalising
                 % Reweighting the mu between the prior and the observed? Gives two values
-                mustar = (sumy{1, part} / a + mu / (1 - a)) ./ (nj{1, part} / a + 1 / (1 - a));
+                divisor = repmat(transpose(nj{1, part} / a + 1 / (1 - a)), 1, size(dataForThisContext, 2));
+                mustar = (sumy{1, part} / a + mu / (1 - a)) ./ divisor;
                 varstar = sigmasq ./ (nj{1, part} / a + 1 / (1 - a));
-                for g  = 1:size(mustar, 2)
-                logprob(:,g) = - 0.5 * ((dataForThisContext(i)) - mustar(:, g)).^2 ./ (a * sigmasq + varstar(:, g)) - 0.5 * log(a * sigmasq + varstar(:, g));
+                logprob = zeros(N, size(dataForThisContext, 2));
+                for g  = 1:N
+                logprob(g, :) = - 0.5 * ((dataForThisContext(i, :)) - mustar(g, :)).^2 ./ (a * sigmasq + varstar(:, g)) - 0.5 * log(a * sigmasq + varstar(:, g));
                 end
                 %logprob = - 0.5 * (dataForThisContext(i, :) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
-                logprob = prod(logprob);
+                logprob = prod(logprob, 2);
                 fprob = cumsum(prob .* exp(logprob - max(logprob)));
                 logweight(part) = logweight(part) + log(fprob(end)) + max(logprob);
                 fprob = fprob / fprob(end);
@@ -1125,91 +1122,13 @@ for j = 1:K
 
                 spart(part, i) = sstar;
                 nj{1, part}(spart(part, i)) = nj{1, part}(spart(part, i)) + 1;
-                sumy{1, part}(spart(part, i)) = sumy{1, part}(spart(part, i)) + dataForThisContext(i);
+                sumy{1, part}(spart(part, i), :) = sumy{1, part}(spart(part, i), :) + dataForThisContext(i, :);
 
             end
         end
-        %s{i, j} = spart(:, i);
-        %disp(['s = ' num2str(s)]);
-        % Add the item to the cluster in the add/remove cluster struct thing
-        %%ADD/REMOVE ITEMS FOR PROPOSED MOVES
-        %%the removal means our proposed marginal likelihood for the
-        %current cluster will be the inverse of what we want, but this
-        %is corrected for below
-        % Would make sense here to have each particle have an entry in this
-        % Might be costly computationally
-        %{
-        for ind = occupiedClusters
-        if(ind == oldLabel), proposedClustersForThisContext = AddRemoveItem('removeGene', proposedClustersForThisContext, ind, i, dataForThisContext, j);
-        else                 proposedClustersForThisContext = AddRemoveItem('addGene',    proposedClustersForThisContext, ind, i, dataForThisContext, j);, end
-        %}
-        % We have inverted a covariance matrix, so should not let this go to waste...
-      
-%{            
-          if(timeCourseSwitches(j))
-              nGenesInProposedCluster = proposedClustersForThisContext(ind).nGenes;
-              if(nGenesInProposedCluster > 0)
-                  clustersForThisContext(ind).covarianceMatrixInverses(nGenesInProposedCluster) = ...
-                      proposedClustersForThisContext(ind).covarianceMatrixInverses(nGenesInProposedCluster);
-              end
-          end
-        end
-        %%WE ALSO NEED THE POSSIBILITY OF ADDING THE ITEM TO AN UNOCCUPIED CLUSTER
-        unoccupiedClusters     = setdiff(allComponents,occupiedClusters);
-        firstUnoccupiedCluster = unoccupiedClusters(1);
-        if(timeCourseSwitches(j))
-            proposedClustersForThisContext(firstUnoccupiedCluster).covarianceMatrixInverses(1:nGenes) = struct('invertedCovarianceMatrix', [], 'determinant', []);
-        end
-        proposedClustersForThisContext                     = AddRemoveItem('addGene', proposedClustersForThisContext, firstUnoccupiedCluster, i, dataForThisContext, j);
-        proposedClustersForThisContext(unoccupiedClusters) = proposedClustersForThisContext(firstUnoccupiedCluster);
-%}
 
-
-
-
-
-
-
-
-
- 
-
-
-%{
-    %%COMPUTE THE MARGINAL LIKELIHOOD RATIOS
-    oldLogMarginalLikelihoods         = [clustersForThisContext.logMarginalLikelihood];
-    newLogMarginalLikelihoods         = [proposedClustersForThisContext.logMarginalLikelihood];
-    marginalLikelihoodRatio           = newLogMarginalLikelihoods - oldLogMarginalLikelihoods;
-    marginalLikelihoodRatio(oldLabel) = -marginalLikelihoodRatio(oldLabel);%%correction for the add/remove
-    %%REMOVE A CONSTANT FACTOR BEFORE EXPONENTIATING
-    %%normalising here prevents numerical instability
-    marginalLikelihoodRatio = marginalLikelihoodRatio - max(marginalLikelihoodRatio);
-    prob                    = prob.*exp(marginalLikelihoodRatio');
-    fprob        	           = cumsum(prob);
-    fprob                   = fprob / fprob(end);  %Find the (normalised) cumulative distribution
-    
-    u       = rand;
-    s(i, j) = 1;
-    while ( u > fprob(s(i, j)) )
-        s(i, j) = s(i, j) + 1;   % Allocate the gene to a new component, by sampling according to the probabilities just calculated
-    end
-    % We now need to update the
-    % the component from which item i was removed, and for
-    % the one to which it was added (unless we have put the
-    % item back in the same cluster):
-%}
-    %%WE ALSO NEED THE POSSIBILITY OF ADDING THE ITEM TO AN UNOCCUPIED CLUSTER
-%{
-    unoccupiedClusters     = setdiff(allComponents,occupiedClusters);
-    firstUnoccupiedCluster = unoccupiedClusters(1);
-      
-    ind = s(i, j);
-    if(s(i,j) ~= oldLabel)
-        clustersForThisContext(oldLabel) = proposedClustersForThisContext(oldLabel);
-        clustersForThisContext(s(i,j))   = proposedClustersForThisContext(s(i,j));
-    end
-%}
 end
+%{
 ari = zeros(1, numbofparts);
   for i1 = 1:(numbofparts - 1)
     for j1 = (1+i1):numbofparts
@@ -1219,6 +1138,9 @@ ari = zeros(1, numbofparts);
     end
   end
 ties = find(ari == max(ari));
+partInd = ties(randi(length(ties)));
+%}
+ties = find(logweight == max(logweight));
 partInd = ties(randi(length(ties)));
 oldLabel = s;
 s(:, j) = spart(partInd, :);
@@ -1230,6 +1152,7 @@ for i = 1:nGenes
     clustersForThisContext(s(i,j))   = proposedClustersForThisContext(s(i,j));
   end
 end
+
 clusterContainer(j).clusterStruct = clustersForThisContext;
 end
 
