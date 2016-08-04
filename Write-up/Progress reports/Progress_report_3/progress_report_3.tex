@@ -33,14 +33,24 @@ which only takes the first entry of each variable. This is later used for calcul
 \end{itemize}
 
 \begin{figure}
-\includegraphics[width = \linewidth]{plots/cluster_smcmdi.png}
-\caption{Clustering for Gaussian test data with 5 clusters using SMC\&MDI (no. of clusters restricted to 5)}
+\includegraphics[width = \linewidth]{plots/agree_mdismc.pdf}
+\caption{Cluster allocation agreements for each of the data sets (right) and the consensus (main) as output from the MDI \& SMC method. Darker colours indicate greater agreement. It can be seen there is very little agreement between cluster allocations.}
 \end{figure}
 
 \begin{figure}
-\includegraphics[width = \linewidth]{plots/cluster_mdi.png}
-\caption{Clustering for Gaussian test data with 5 clusters using original MDI (no. of clusters restricted to 20)}
+\includegraphics[width = \linewidth]{plots/agree_mdi.pdf}
+\caption{Cluster allocation agreements for each of the data sets (right) and the consensus (main) as output from the original MDI method. Darker colours indicate greater agreement. There is strong agreement in clusters.}
 \end{figure}
-Adjusted Rand Index between the two allocations (below) $<0$. Original MDI code won't run with number of clusters restricted to just 5.
+
+\begin{figure}
+\includegraphics[width = \linewidth]{plots/cluster_mdismc_2.png}
+\caption{Clustering for Gaussian test data with 5 clusters using SMC \& MDI method (no. of clusters set to 4). There is no clear agreement across the two data sets.}
+\end{figure}
+
+
+\begin{figure}
+\includegraphics[width = \linewidth]{plots/cluster_mdi_2.png}
+\caption{Clustering for Gaussian test data with 5 clusters using original MDI (no. of clusters restricted to 20). There is clear agreement across the two data sets.}
+\end{figure}
 \end{document}
 

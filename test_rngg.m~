@@ -1,0 +1,149 @@
+alldata = importdata('Data/GaussianTestData1.csv', ',',1);
+data = alldata.data;
+nGenes = length(data);
+nFeatures = size(data, 2);
+% Set a new s for the particle filter called spart
+spart = zeros(numbofparts, nGenes);
+logweight = zeros(1, numbofparts);
+partstar = zeros(1, numbofparts);
+M = 1;
+a = 0.5;
+N = 4;
+mu = cell(1, numbofparts);
+mu(1, :) = {zeros(N, nFeatures)};
+sigmasq = cell(1, numbofparts);
+sigmasq(1, :) = {1 + zeros(N, nFeatures)};
+
+% Use nGenes for n
+% Make these greater dimension to allow for the multiple datasets; not sure yet
+sumy = cell(1, numbofparts);
+sumysq = cell(1, numbofparts);
+nj = cell(1, numbofparts);
+sumv = zeros(numbofparts, 1);
+% Some specifications for the finite mixture model
+sumy(1, :) = {zeros(N, nFeatures)};
+sumysq(1, :) = {zeros(N, nFeatures)};
+nj(1, :) = {zeros(N, 1)};
+
+for i = 1:nGenes
+    
+    for part = 1:numbofparts
+        % Sample vn - not needed?
+        % sumv(part) = sumv(part) + samplev_NGG(NGGlambda, sumv(part), i, length(nj{1, part}), M, gamma);
+        if ( i == 1 ) % If we're at the first data point
+            sumy{1, part}(1, :) = data(i, :);
+            nj{1, part}(1) = 1;
+            logweight(part) = 0;
+            spart(part, i) = 1;
+        else
+            % Prob uses the prob calculated previously
+            % prob = [(nj{1, part}-gamma)  (M*(NGGlambda + sumv(part))^gamma)];
+            prob = prob / sum(prob); % Normalising
+            divisor = repmat(nj{1, part} / a + 1 / (1 - a), 1, nFeatures);
+            mustar = (sumy{1, part} / a + mu{1, part} / (1 - a)) ./ divisor;
+            varstar = sigmasq{1, part} ./ divisor;
+            logprob = zeros(N, nFeatures);
+            for g  = 1:N
+                logprob(g, :) = - 0.5 * (data(i, :) - mustar(g, :)).^2 ./ (a * sigmasq{1, part}(g, :) + varstar(g, :)) - 0.5 * log(a * sigmasq{1, part}(g, :) + varstar(g, :));
+            end
+            %logprob = - 0.5 * (data(i, :) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
+            logprob = transpose(prod(logprob, 2));
+            logprob = transpose(sum(exp(logprob), 2)
+            fprob = cumsum(prob .* exp(logprob - max(logprob)));
+            logweight(part) = logweight(part) + log(fprob(end)) + max(logprob);
+            fprob = fprob / fprob(end);
+            u1 = rand;
+            sstar = 1;
+            while ( fprob(sstar) < u1 )
+                sstar = sstar + 1;
+            end
+            
+            spart(part, i) = sstar;
+            nj{1, part}(spart(part, i)) = nj{1, part}(spart(part, i)) + 1;
+            sumy{1, part}(:, spart(part, i)) = sumy{1, part}(:, spart(part, i)) + data(:, i);
+        end
+    end
+end
+
+    ESS = sum(exp(logweight - max(logweight)))^2 / sum(exp(logweight - max(logweight)).^2);
+    % This to be done at all steps?
+    if ( ESS < 0.5 * numbofparts )
+        fprob = cumsum(exp(logweight - max(logweight)));
+        fprob = fprob / fprob(end);
+        
+        u1 = rand / numbofparts;
+        m = 1;
+        it = 1;
+        while ( m <= numbofparts )
+            while ( (u1 < fprob(m)) && (m <= numbofparts) )
+                partstar(it) = m;
+                u1 = u1 + 1 / numbofparts;
+                it = it + 1;
+            end
+            m = m + 1;
+        end
+        
+        sumy = sumy(1, partstar);
+        nj = nj(1, partstar);
+        sumv = sumv(partstar);
+        s = s(partstar, :);
+        
+        logweight = zeros(1, numbofparts);
+        
+        for it = 1:numbofparts
+            for m = 1:(i-1)
+                nj{1, it}(s(it, m)) = nj{1, it}(s(it, m)) - 1;
+                sumy{1, it}(s(it, m)) = sumy{1, it}(s(it, m)) - data(j);
+                
+                if ( nj{1, it}(s(it, j)) == 0 )
+                    nj{1, it}(s(it, j)) = [];
+                    sumy{1, it}(s(it, j)) = [];
+                    s(it, :) = s(it, :) - (s(it, :) > s(it, j));
+                end
+                
+                prob = [(nj{1, it}-gamma)  (M*(NGGlambda + sumv(it))^gamma)];
+                mustar = [(sumy{1, it} / a + mu / (1 - a)) ./ (nj{1, it} / a + 1 / (1 - a)) mu];
+                varstar = [sigmasq ./ (nj{1, it} / a + 1 / (1 - a)) sigmasq*(1-a)];
+                prob = prob .* exp(- 0.5 * (data(j) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar));
+                
+                fprob = cumsum(prob);
+                fprob = fprob / fprob(end);
+                u1 = rand;
+                sstar = 1;
+                while ( fprob(sstar) < u1 )
+                    sstar = sstar + 1;
+                end
+                if ( sstar <= length(nj{1, it}) )
+                    s(it, j) = sstar;
+                    nj{1, it}(s(it, j)) = nj{1, it}(s(it, j)) + 1;
+                    sumy{1, it}(s(it, j)) = sumy{1, it}(s(it, j)) + data(j);
+                else
+                    s(it, j) = length(nj{1, it}) + 1;
+                    nj{1, it} = [nj{1, it} 1];
+                    sumy{1, it} = [sumy{1, it} data(j)];
+                end
+            end
+        end
+    elseif (i == n )
+        fprob = cumsum(exp(logweight - max(logweight)));
+        fprob = fprob / fprob(end);
+        
+        u1 = rand / numbofparts;
+        j = 1;
+        it = 1;
+        while ( j <= numbofparts )
+            while ( (u1 < fprob(j)) && (j <= numbofparts) )
+                partstar(it) = j;
+                u1 = u1 + 1 / numbofparts;
+                it = it + 1;
+            end
+            j = j + 1;
+        end
+        
+        sumy = sumy(1, partstar);
+        nj = nj(1, partstar);
+        sumv = sumv(partstar);
+        s = s(partstar, :);
+    end
+    
+end

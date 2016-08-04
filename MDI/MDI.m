@@ -1013,6 +1013,7 @@ numbofparts = 100;
 gamma = 0.1;
 
 
+
 %%LOOP OVER ALL 'K' DATA TYPES
 for j = 1:K
     if K > 1
@@ -1031,9 +1032,11 @@ for j = 1:K
     partstar = zeros(1, numbofparts);
     M = 1;
     a = 0.5;
-    mu = vertcat(clustersForThisContext.empiricalMeans);
-    
-    sigmasq = 1;
+    nFeatures = size(dataForThisContext, 2);
+    mu = cell(1, numbofparts);
+    mu(1, :) = {vertcat(clustersForThisContext.empiricalMeans)};
+    sigmasq = cell(1, numbofparts);
+    sigmasq(1, :) = {vertcat(clustersForThisContext.squaredResiduals) ./ repmat(vertcat(clustersForThisContext.nGenes), 1, nFeatures)};
     % Use nGenes for n
     % Make these greater dimension to allow for the multiple datasets; not sure yet
     sumy = cell(1, numbofparts);
@@ -1041,21 +1044,17 @@ for j = 1:K
     nj = cell(1, numbofparts);
     sumv = zeros(numbofparts, 1);
     % Some specifications for the finite mixture model
-    sumy(1, :) = {zeros(N, size(dataForThisContext, 2))};
-    nj(1, :) = {zeros(1, N)};
+    sumy(1, :) = {zeros(N, nFeatures)};
+    % sumysq(1, :) = {zeros(N, nFeatures)};
+    nj(1, :) = {zeros(N, 1)};
+
+
+    %%NOW FIND THE "LIKELIHOOD" TERM
+    %% Not sure if needed?
+    proposedClustersForThisContext = clustersForThisContext;
+    occupiedClusters               = transpose(unique(s(:,j)));
     %%LOOP OVER ALL GENES IN EACH TYPE
     for i = 1:nGenes
-        % disp(['i = ' num2str(i)]);
-        % This is where the particle filter needs to come in
-        % Loop over each of the particles
-        % First step is draw the s values
-        % The allocation variables conditional on y[1:t] and s*(particle)[1:(t-1)]
-        % q(k) poportional to m(i){k, t-1}k{*}{k}(yt|s*(i){1:(t-1)) if k between 1 and Ki{t-1}
-        % else if k = Ki{t - 1} + 1 M k*new(yt)
-        % Need to update fprob using the particle filter
-        %%FIND USEFUL VALUES
-        oldLabel = s(i,j);
-        % disp(['oldlabel' num2str(oldLabel)]);
         prob     = gammaMatrix(:, j);%%conditional prior
         %%We need to find the labels of gene i in the other contexts:
         %%We consider all possibilities for the label of gene i
@@ -1074,58 +1073,125 @@ for j = 1:K
         upWeighting          = finalIndexMatrixRows.*myPhiMatrix;
         upWeighting          = prod(1+ upWeighting(:,phiIndicesForConditional),2);
         prob                 = prob.*upWeighting;  %%This takes care of multiplying by 1+phi
-
-        %%NOW FIND THE "LIKELIHOOD" TERM
-        %% Not sure if needs to be done for each gene?
-        proposedClustersForThisContext = clustersForThisContext;
-        occupiedClusters               = transpose(unique(s(:,j)));
-        %% Begin with the particle filter.
-        %% Already looping over the observations, now need to loop over the particles doing a and b
-        %% a Sample an allocation for s, based on the s so far and the data including the current data from
-        %% q(k) prop. to wk  k* (yt | s*(1:t-1)) for k between 1 and D (max number of components
-        %% b Calc the unnormalised weight eps(i) = sum(wk kk (yt|s1:(t-1))
-        %% Then reweight the particles according to the weights
-        %% Problem of how to store all the different particles though. Do we just keep them all?
-        %% Loop over particles
-        %prob = transpose(prob); 
+        prob = transpose(prob); 
         for part = 1:numbofparts
-                % Sample vn
-                sumv(part) = sumv(part) + samplev_NGG(NGGlambda, sumv(part), i, length(nj{1, part}), M, gamma);    
-            if ( i == 1 ) % If we're at the first data point
-                sumy{1, part}(1, :) = dataForThisContext(i, :);
-                nj{1, part}(1) = 1;
-                logweight(part) = 0;
-                spart(part, i) = 1; 
-            else
-                % Prob is just going to be the prob calc'd above
-                % prob = [(nj{1, part}-gamma)  (M*(NGGlambda + sumv(part))^gamma)];
-                % Prob of assigning to each cluster? Maybe replace with gamma matrix?
-                prob = prob / sum(prob); % Normalising
-                % Reweighting the mu between the prior and the observed? Gives two values
-                divisor = repmat(transpose(nj{1, part} / a + 1 / (1 - a)), 1, size(dataForThisContext, 2));
-                mustar = (sumy{1, part} / a + mu / (1 - a)) ./ divisor;
-                varstar = sigmasq ./ (nj{1, part} / a + 1 / (1 - a));
-                logprob = zeros(N, size(dataForThisContext, 2));
-                for g  = 1:N
-                logprob(g, :) = - 0.5 * ((dataForThisContext(i, :)) - mustar(g, :)).^2 ./ (a * sigmasq + varstar(:, g)) - 0.5 * log(a * sigmasq + varstar(:, g));
+        % Sample vn - not needed?
+        % sumv(part) = sumv(part) + samplev_NGG(NGGlambda, sumv(part), i, length(nj{1, part}), M, gamma);
+        if ( i == 1 ) % If we're at the first data point
+            sumy{1, part}(1, :) = dataForThisContext(i, :);
+            nj{1, part}(1) = 1;
+            logweight(part) = 0;
+            spart(part, i) = 1;
+        else
+            % Prob uses the prob calculated previously
+            % prob = [(nj{1, part}-gamma)  (M*(NGGlambda + sumv(part))^gamma)];
+            prob = prob / sum(prob); % Normalising
+            divisor = repmat(nj{1, part} / a + 1 / (1 - a), 1, nFeatures);
+            mustar = (sumy{1, part} / a + mu{1, part} / (1 - a)) ./ divisor;
+            varstar = sigmasq{1, part} ./ divisor;
+            logprob = zeros(N, nFeatures);
+            for g  = 1:N
+                logprob(g, :) = - 0.5 * (dataForThisContext(i, :) - mustar(g, :)).^2 ./ (a * sigmasq{1, part}(g, :) + varstar(g, :)) - 0.5 * log(a * sigmasq{1, part}(g, :) + varstar(g, :));
+            end
+            %logprob = - 0.5 * (data(i, :) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
+            logprob = transpose(log(sum(exp(logprob), 2)));
+            fprob = cumsum(prob .* exp(logprob - max(logprob)));
+            logweight(part) = logweight(part) + log(fprob(end)) + max(logprob);
+            fprob = fprob / fprob(end);
+            u1 = rand;
+            sstar = 1;
+            while ( fprob(sstar) < u1 )
+                sstar = sstar + 1;
+            end
+            
+            spart(part, i) = sstar;
+            nj{1, part}(spart(part, i)) = nj{1, part}(spart(part, i)) + 1;
+            sumy{1, part}(spart(part, i), :) = sumy{1, part}(spart(part, i), :) + dataForThisContext(i, :);
+        end
+    end
+    
+    
+    ESS = sum(exp(logweight - max(logweight)))^2 / sum(exp(logweight - max(logweight)).^2);
+    % This to be done at all steps?
+    if ( ESS < 0.5 * numbofparts )
+        fprob = cumsum(exp(logweight - max(logweight)));
+        fprob = fprob / fprob(end);
+        
+        u1 = rand / numbofparts;
+        m = 1;
+        it = 1;
+        while ( m <= numbofparts )
+            while ( (u1 < fprob(m)) && (m <= numbofparts) )
+                partstar(it) = m;
+                u1 = u1 + 1 / numbofparts;
+                it = it + 1;
+            end
+            m = m + 1;
+        end
+        
+        sumy = sumy(1, partstar);
+        nj = nj(1, partstar);
+        sumv = sumv(partstar);
+        spart = spart(partstar, :);
+        
+        logweight = zeros(1, numbofparts);
+        
+        for it = 1:numbofparts
+            for m = 1:(i-1)
+                nj{1, it}(spart(it, m)) = nj{1, it}(spart(it, m)) - 1;
+                sumy{1, it}(spart(it, m), :) = sumy{1, it}(spart(it, m), :) - dataForThisContext(j, :);
+                
+                % This line isn't needed
+                if ( nj{1, it}(spart(it, j)) == 0 )
+                    nj{1, it}(spart(it, j)) = [];
+                    sumy{1, it}(spart(it, j)) = [];
+                    spart(it, :) = spart(it, :) - (spart(it, :) > spart(it, j));
                 end
-                %logprob = - 0.5 * (dataForThisContext(i, :) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
-                logprob = prod(logprob, 2);
-                fprob = cumsum(prob .* exp(logprob - max(logprob)));
-                logweight(part) = logweight(part) + log(fprob(end)) + max(logprob);
+                
+                
+                divisor = repmat(nj{1, part} / a + 1 / (1 - a), 1, nFeatures);
+                mustar = (sumy{1, part} / a + mu{1, part} / (1 - a)) ./ divisor;
+                varstar = sigmasq{1, part} ./ divisor;
+                logprob = zeros(N, nFeatures);
+                for g  = 1:N
+                    logprob(g, :) = - 0.5 * (dataForThisContext(i, :) - mustar(g, :)).^2 ./ (a * sigmasq{1, part}(g, :) + varstar(g, :)) - 0.5 * log(a * sigmasq{1, part}(g, :) + varstar(g, :));
+                end
+                %logprob = - 0.5 * (data(i, :) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
+                logprob = transpose(log(sum(exp(logprob), 2)));
+                prob = prob .* exp(- 0.5 * (dataForThisContext(j) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar));
+                
+                fprob = cumsum(prob);
                 fprob = fprob / fprob(end);
                 u1 = rand;
                 sstar = 1;
                 while ( fprob(sstar) < u1 )
                     sstar = sstar + 1;
                 end
-
                 spart(part, i) = sstar;
                 nj{1, part}(spart(part, i)) = nj{1, part}(spart(part, i)) + 1;
                 sumy{1, part}(spart(part, i), :) = sumy{1, part}(spart(part, i), :) + dataForThisContext(i, :);
-
             end
         end
+    elseif (i == nGenes )
+        fprob = cumsum(exp(logweight - max(logweight)));
+        fprob = fprob / fprob(end);
+        u1 = rand / numbofparts;
+        m = 1;
+        it = 1;
+        while ( m <= numbofparts )
+            while ( (u1 < fprob(m)) && (m <= numbofparts) )
+                partstar(it) = m;
+                u1 = u1 + 1 / numbofparts;
+                it = it + 1;
+            end
+            m = m + 1;
+        end
+        
+        sumy = sumy(1, partstar);
+        nj = nj(1, partstar);
+        sumv = sumv(partstar);
+        spart = spart(partstar, :);
+    end
 
 end
 %{
@@ -1140,6 +1206,7 @@ ari = zeros(1, numbofparts);
 ties = find(ari == max(ari));
 partInd = ties(randi(length(ties)));
 %}
+
 ties = find(logweight == max(logweight));
 partInd = ties(randi(length(ties)));
 oldLabel = s;
