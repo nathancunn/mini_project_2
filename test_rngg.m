@@ -1,4 +1,4 @@
-alldata = importdata('Data/GaussianTestData1.csv', ',',1);
+alldata = importdata('Data/synth_data/testData1.csv', ',',1);
 dataForThisContext = alldata.data;
 nGenes = length(dataForThisContext);
 nFeatures = size(dataForThisContext, 2);
@@ -8,7 +8,7 @@ logweight = zeros(1, numbofparts);
 partstar = zeros(1, numbofparts);
 M = 1;
 a = 0.5;
-N = 4;
+N = 2;
 mu = cell(1, numbofparts);
 mu(1, :) = {zeros(N, nFeatures)};
 sigmasq = cell(1, numbofparts);
@@ -24,7 +24,7 @@ sumv = zeros(numbofparts, 1);
 sumy(1, :) = {zeros(N, nFeatures)};
 sumysq(1, :) = {zeros(N, nFeatures)};
 nj(1, :) = {zeros(N, 1)};
-
+prob = [0.5 0.5]
 for i = 1:nGenes
     
     for part = 1:numbofparts

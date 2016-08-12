@@ -1008,12 +1008,123 @@ global K nGenes N phiIndexMatrix finalIndexMatrix fHandles ...
     gaussianSwitches poissonSwitches nbSwitches massParam nComponents
 allComponents = 1:N;
 % Start with a fixed number of particles allow specification later
-NGGlambda = 1;
-numbofparts = 100;
-gamma = 0.1;
+numbofparts = 10;
+
+prior = zeros(nGenes, N, K);
+for k = 1:K
+    if K > 1
+    phiIndicesForConditional = union(find(phiIndexMatrix(:,1)== k), find(phiIndexMatrix(:,2)== k));
+    else
+    phiIndicesForConditional = [];
+    end
+    notPertinentInThisContext = doNotPertainToContexti(k,:);
+    for i = 1:nGenes
+        % Calculate the prior and upweight by concordance across datasets
+        prob     = gammaMatrix(:, k);%%conditional prior
+        %%We need to find the labels of gene i in the other contexts:
+        %%We consider all possibilities for the label of gene i
+        %%in context j:
+        labelsAcrossAllContexts            = s(i, :);
+        labelsAcrossAllContextsMatrix      = ones(N,1)*labelsAcrossAllContexts;
+        labelsAcrossAllContextsMatrix(:,k) = 1:N;
+        %%We then need to upweight the probabilities according
+        %%to the labels in the other contexts.
+        labelAgreementMatrix = (allLabelsMatrix == labelsAcrossAllContextsMatrix);
+        myPhiMatrix          = ones(size(labelAgreementMatrix,1),1)*phiVector;
+        binInd               = labelAgreementMatrix*(2.^(size(labelAgreementMatrix,2)-1:-1:0))';  %bin2dec(num2str(labelAgreementMatrix))
+        finalIndexMatrixRows = finalIndexMatrix(binInd,:);
+        finalIndexMatrixRows(:,notPertinentInThisContext) = false;
+        upWeighting          = finalIndexMatrixRows.*myPhiMatrix;
+        upWeighting          = prod(1+ upWeighting(:,phiIndicesForConditional),2);
+        prob                 = prob.*upWeighting;  %%This takes care of multiplying by 1+phi
+        prior(i, :, k) = transpose(prob);
+end
+end
+
+% Empyting the clusters from the previous run to allow the particle filter to run
+for k = 1:K
+    proposedClustersForThisContext = clusterContainer(k).clusterStruct;
+    dataForThisContext = clusterContainer(k).data;
+    for ind = 1:nGenes
+        proposedClustersForThisContext = AddRemoveItem('removeGene', proposedClustersForThisContext, s(ind, k), ind, dataForThisContext, 1);
+    end
+    clusterContainer(k).clusterStruct = proposedClustersForThisContext;
+end
+
+% Specify some values for the particle filter
+s = zeros(nGenes, K, numbofparts);
+logweight = zeros(K, numbofparts);
+
+% Replicate the cluster container for each particle and each data set
+proposedClusterContainer = repelem(clusterContainer, numbofparts);
+
+% Particle filter
+% Only outputs a single particle
+for i = 1:nGenes
+    %disp(['i = ' num2str(i)])
+    if(i == 1)
+        fprintf ('i = %d,', i)
+    elseif(mod(i, 20) ==0)
+        fprintf (' %d,\r   ', i)
+    else
+        fprintf (' %d,', i)
+    end
+    for m = 1:numbofparts
+        for k = 1:K;
+            dataForThisContext = proposedClusterContainer(numbofparts * (k - 1) + m).data;
+            proposedClustersForThisContext = proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct;
+            
+            if(i == 1)
+                proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, 1, i, dataForThisContext, k);
+                proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct = proposedClustersForThisContext;
+                sstar = 1;
+            else
+                logprob = zeros(1, N);
+                oldLogMarginalLikelihoods         = [proposedClustersForThisContext.logMarginalLikelihood];
+                for ind = 1:N
+                    proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, ind, i, dataForThisContext, k);
+                    % proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, ind, i, dataForThisContext, k);
+                    %newLogMarginalLikelihoods         = [prop.logMarginalLikelihood];
+                    %marginalLikelihoodRatio         = newLogMarginalLikelihoods - oldLogMarginalLikelihoods;
+                    %logprob(1, ind) = marginalLikelihoodRatio(ind); % - oldLogMarginalLikelihoods(ind);    
+                    % logprob(1, ind) = mvnpdf(dataForThisContext(i, :), prop(ind).empiricalMeans);                
+                end
+                logprob = [proposedClustersForThisContext.logMarginalLikelihood];
+                newLogMarginalLikelihoods         = [proposedClustersForThisContext.logMarginalLikelihood];
+                % marginalLikelihoodRatio           = newLogMarginalLikelihoods - oldLogMarginalLikelihoods;
+                % marginalLikelihoodRatio = marginalLikelihoodRatio - max(marginalLikelihoodRatio);
+                % logprob(1,ind) = log(sum(exp([prop.logMarginalLikelihood])));
+                % logprob(1, ind) = prop(ind).logMarginalLikelihood;
+                %logprob = newLogMarginalLikelihoods;
+                prob = prior(i, :, k)/sum(prior(i, :, k));
+                % prob = ones(1, N) / N;
+                fprob = cumsum(prob .* exp(logprob - max(logprob)));
+                fprob = fprob/fprob(end);
+                u1 = rand;
+                sstar = 1;
+                while ( fprob(sstar) < u1 )
+                    sstar = sstar + 1;
+                end
+                logweight(k, m) = logweight(k, m) + log(fprob(end)) + max(logprob);
+                proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct = AddRemoveItem('addGene', proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct, sstar, i, dataForThisContext, k);
+                
+            end
+            s(i, k, m) = sstar;
+        end
+
+    end
+    %clusterContainer = proposedClusterContainer;
+end
+ties = find(sum(logweight) == max(sum(logweight)));
+partstar = ties(randi(length(ties)));
+s = s(:, :, partstar);
+for k = 1:K
+    clusterContainer(k) = proposedClusterContainer(numbofparts * (k - 1) + partstar);
+end
 
 
 
+%{
 %%LOOP OVER ALL 'K' DATA TYPES
 for j = 1:K
     if K > 1
@@ -1025,6 +1136,31 @@ for j = 1:K
     clustersForThisContext    = clusterContainer(j).clusterStruct;
     dataForThisContext        = clusterContainer(j).data;
     fHandle = fHandles{j};
+
+for i = 1:nGenes
+        prob     = gammaMatrix(:, j);%%conditional prior
+        %%We need to find the labels of gene i in the other contexts:
+        %%We consider all possibilities for the label of gene i
+        %%in context j:
+        labelsAcrossAllContexts            = s(i,:);
+        labelsAcrossAllContextsMatrix      = ones(N,1)*labelsAcrossAllContexts;
+        labelsAcrossAllContextsMatrix(:,j) = 1:N;
+        %%We then need to upweight the probabilities according
+        %%to the labels in the other contexts.
+        labelAgreementMatrix = (allLabelsMatrix == labelsAcrossAllContextsMatrix);
+        myPhiMatrix          = ones(size(labelAgreementMatrix,1),1)*phiVector;
+        binInd               = labelAgreementMatrix*(2.^(size(labelAgreementMatrix,2)-1:-1:0))';  %bin2dec(num2str(labelAgreementMatrix))
+        finalIndexMatrixRows = finalIndexMatrix(binInd,:);
+        finalIndexMatrixRows(:,notPertinentInThisContext) = false;
+        
+        upWeighting          = finalIndexMatrixRows.*myPhiMatrix;
+        upWeighting          = prod(1+ upWeighting(:,phiIndicesForConditional),2);
+        prob                 = prob.*upWeighting;  %%This takes care of multiplying by 1+phi
+        prob = transpose(prob); 
+
+end
+end
+
     
     % Set a new s for the particle filter called spart
     spart = zeros(numbofparts, nGenes);
@@ -1222,7 +1358,7 @@ end
 
 clusterContainer(j).clusterStruct = clustersForThisContext;
 end
-
+%}
 end
 %%----------------------------------------------------------------------
 %% INITIALISE THE MCMC FILE --------------------------------------------

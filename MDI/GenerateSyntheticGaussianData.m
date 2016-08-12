@@ -4,14 +4,14 @@
 %% DEFINE USEFUL VALUES ------------------------------------------------
 %%----------------------------------------------------------------------
 nDataItems      = 200;
-nClusters       = 5;
+nClusters       = 3;
 nSignalFeatures = 100;
 nNoiseFeatures  = 50;
-signalLevel     = 5;
+signalLevel     = 30;
 nFeatures       = nSignalFeatures + nNoiseFeatures;
-outputPath      = '~/MatlabCode/MDI/Data/';
-outputFile1     = [outputPath, 'GaussianTestData1.csv'];
-outputFile2     = [outputPath, 'GaussianTestData2.csv'];
+outputPath      = 'Data/synth_data/';
+outputFile1     = [outputPath, 'aGaussianTestData1.csv'];
+outputFile2     = [outputPath, 'aGaussianTestData2.csv'];
 %%----------------------------------------------------------------------
 %% CONSTRUCT SYNTHETIC DATA --------------------------------------------
 %%----------------------------------------------------------------------

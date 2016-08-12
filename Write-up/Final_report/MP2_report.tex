@@ -1,0 +1,61 @@
+\documentclass[10pt,a4paper]{report}
+\usepackage{algorithm2e}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{bbm}
+\usepackage{graphicx}
+\usepackage[utf8]{inputenc}
+\author{Nathan Cunningham}
+\title{Multiple dataset integration  - with SMC}
+\begin{document}
+
+
+\section{Introduction}
+Bit on cluster analysis, bit on multiple datasets, applications of this to e.g. gene expression data
+
+
+
+\section{Literature}
+MDI paper summary
+
+SMC paper summary
+
+Maybe bit on Sarah Wade's paper?
+\cite{wade2015bayesian}
+\section{Methods}
+Algorithm used for current paper
+
+\begin{algorithm}[H]
+ \KwData{Prior}
+ \KwResult{Clustering allocation }
+ \For{i = 1,\dots, N}{
+  \For{m = 1,\dots, M}{
+  \For{k = 1,\dots, K}{
+  Sample $c^{(m)}_{i, k}$\;
+  $q(c^{(m)}_{i,k} = k) \propto k^*(y_{i,k}|c_{i,j}^{(m)} = k) \gamma_{k, j}$
+  
+  $\xi_m = \xi_m \sum_k \gamma_{k, j}k^*(y_{i,k}|c_{i,j}^{(m)} = k)$ 
+  
+  $\xi_m = \xi_m \prod (1+\phi_{k, l} \mathbbm{1}(-))$
+  }
+  }
+  }
+  \eIf{understand}{
+   go to next section\;
+   current section becomes this one\;
+   }{
+   go back to the beginning of current section\;
+ }
+ \caption{How to write algorithms}
+\end{algorithm}
+\section{Example application}
+
+\section{Conclusions and proposals for future work}
+
+
+
+
+\bibliographystyle{plain}
+\bibliography{bibliography.bib}
+\end{document}
