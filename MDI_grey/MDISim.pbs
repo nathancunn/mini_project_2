@@ -1,0 +1,11 @@
+#!/bin/csh
+#PBS -l nodes=1:ppn=1,mem=1000mb,walltime=48:00:00
+#PBS -V
+##CHANGE TO THE CORRECT WORKING DIRECTORY
+cd $PBS_O_WORKDIR
+##DEFINE USEFUL VARIABLES
+set uniqueID = "$PBS_ARRAYID"
+##CONSTRUCT THE MATLAB COMMAND; PRINT IT TO SCREEN; RUN IT
+set matlabCommand = "MDISim('$uniqueID'); exit"
+echo $matlabCommand
+matlab -nosplash -nodesktop -nodisplay -r "$matlabCommand"

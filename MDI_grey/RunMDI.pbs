@@ -1,0 +1,9 @@
+#!/bin/csh
+#PBS -l nodes=1:ppn=1,mem=1900mb,walltime=48:00:00
+#PBS -V
+##CHANGE TO THE CORRECT WORKING DIRECTORY
+cd $PBS_O_WORKDIR
+##CONSTRUCT THE MATLAB COMMAND; PRINT IT TO SCREEN; RUN IT
+set matlabCommand = "RunMDI_rss('$dataName', $PBS_ARRAYID, $initialise); exit"
+echo $matlabCommand
+matlab -nosplash -nodesktop -nodisplay -r "$matlabCommand"

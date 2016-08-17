@@ -3,7 +3,7 @@
 %%Original version by Paul Kirk
 %%Also modified by Rich Savage
 %%
-function MDI(outputDir, numberOfComponents, numbofits, fileNames, dataTypes, hyperSamplingFrequency, samplingFrequency, uniqueIdentifier, initialise, featureSelectionSwitches)
+function MDI(outputDir, numberOfComponents, numbofits, fileNames, dataTypes, hyperSamplingFrequency, samplingFrequency, uniqueIdentifier, initialise, numbofparts, featureSelectionSwitches)
 
 global K N twoPowKminus1 powersOfTwo contextInvolvementIndexMatrix
 global twoPowNumberOfPhis binaryMatrixNumberOfPhis phiIndexMatrix
@@ -369,7 +369,7 @@ for it = 1:numbofits
     %%----------------------------------------------------------------------
     vStar                      = DrawNewVStar(normalizingConstant);
     massParam                  = DrawNewMassParameter(massParam, gammaMatrix);
-    [clusterContainer s]       = DrawNewItemLabel(gammaMatrix, phiVector, s, clusterContainer);
+    [clusterContainer s]       = DrawNewItemLabel(gammaMatrix, phiVector, s, clusterContainer, numbofparts);
     [phiVector  productMatrix] = DrawNewPhi(phiVector, vStar, s, productMatrix);
     normalizingConstant        = sum(productMatrix);%recalculate the normalizing constant
     %%----------------------------------------------------------------------
@@ -1001,14 +1001,13 @@ end
 %%-----------------------------------------------------------------
 %% DRAW NEW ITEM LABELS --------------------------------------------
 %%-----------------------------------------------------------------
-function [clusterContainer s] = DrawNewItemLabel(gammaMatrix, phiVector, s, clusterContainer)
+function [clusterContainer s] = DrawNewItemLabel(gammaMatrix, phiVector, s, clusterContainer, numbofparts)
 %%GLOBAL VARIABLES REQUIRED BY THIS FUNCTION
 global K nGenes N phiIndexMatrix finalIndexMatrix fHandles ...
     doNotPertainToContexti allLabelsMatrix timeCourseSwitches ...
     gaussianSwitches poissonSwitches nbSwitches massParam nComponents
 allComponents = 1:N;
 % Start with a fixed number of particles allow specification later
-numbofparts = 10;
 
 prior = zeros(nGenes, N, K);
 for k = 1:K
@@ -1041,324 +1040,144 @@ for k = 1:K
 end
 end
 
+
+
 % Empyting the clusters from the previous run to allow the particle filter to run
 for k = 1:K
     proposedClustersForThisContext = clusterContainer(k).clusterStruct;
     dataForThisContext = clusterContainer(k).data;
     for ind = 1:nGenes
-        proposedClustersForThisContext = AddRemoveItem('removeGene', proposedClustersForThisContext, s(ind, k), ind, dataForThisContext, 1);
+        proposedClustersForThisContext = AddRemoveItem('removeGene', proposedClustersForThisContext, s(ind, k), ind, dataForThisContext, k);
     end
     clusterContainer(k).clusterStruct = proposedClustersForThisContext;
 end
 
 % Specify some values for the particle filter
 s = zeros(nGenes, K, numbofparts);
-logweight = zeros(K, numbofparts);
+logweight = zeros(1, numbofparts);
+partstar = zeros(1, numbofparts);
+aprior = [1 1];
+a = betarnd(aprior(1), aprior(2), numbofparts, 1);
 
 % Replicate the cluster container for each particle and each data set
 proposedClusterContainer = repelem(clusterContainer, numbofparts);
-
+if(rand >= 0)
+    randIndex = randperm(nGenes);
+    %randIndex = sort(1:nGenes, 'descend');
+end
 % Particle filter
 % Only outputs a single particle
-for i = 1:nGenes
-    %disp(['i = ' num2str(i)])
-    if(i == 1)
-        fprintf ('i = %d,', i)
-    elseif(mod(i, 20) ==0)
-        fprintf (' %d,\r   ', i)
+for n = 1:nGenes
+    if(exist('randIndex'))
+        i = randIndex(n);
     else
-        fprintf (' %d,', i)
+        i = n;
     end
+    prog = round(n / nGenes * 50);
+    prog_bar = sprintf([ '[' repmat('■', 1, prog) repmat('_', 1, 50 - prog) ']']);
+    fprintf(prog_bar);
     for m = 1:numbofparts
         for k = 1:K;
             dataForThisContext = proposedClusterContainer(numbofparts * (k - 1) + m).data;
             proposedClustersForThisContext = proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct;
-            
-            if(i == 1)
-                proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, 1, i, dataForThisContext, k);
-                proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct = proposedClustersForThisContext;
+            if(n == 1)
                 sstar = 1;
             else
                 logprob = zeros(1, N);
-                oldLogMarginalLikelihoods         = [proposedClustersForThisContext.logMarginalLikelihood];
-                for ind = 1:N
-                    proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, ind, i, dataForThisContext, k);
-                    % proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, ind, i, dataForThisContext, k);
-                    %newLogMarginalLikelihoods         = [prop.logMarginalLikelihood];
-                    %marginalLikelihoodRatio         = newLogMarginalLikelihoods - oldLogMarginalLikelihoods;
-                    %logprob(1, ind) = marginalLikelihoodRatio(ind); % - oldLogMarginalLikelihoods(ind);    
-                    % logprob(1, ind) = mvnpdf(dataForThisContext(i, :), prop(ind).empiricalMeans);                
+                occupiedClusters = unique(s(1:(n - 1), k, m));
+                occupiedClusters = find([proposedClustersForThisContext.nGenes] ~= 0);
+                for ind1 = 1:length(occupiedClusters)
+                    ind = occupiedClusters(ind1);
+                    %meanCentred = dataForThisContext(i, :) - proposedClustersForThisContext(ind).empiricalMeans;
+                        mu = sum(dataForThisContext(find(proposedClustersForThisContext(ind).logicalGeneIDs), :)) / a(m);
+                        mu = mu / (proposedClustersForThisContext(ind).nGenes / a(m) + 1 / (1 - a(m)));
+                        meanCentred = dataForThisContext(i, :) - mu;
+                        sigma = eye(size(dataForThisContext, 2));
+                        sigmaInverse = sigma .* (proposedClustersForThisContext(ind).nGenes / a(m) + 1 / (1 - a(m)));
+                        logprob(1, ind) = - 0.5 * (meanCentred * sigmaInverse * meanCentred.');
                 end
-                logprob = [proposedClustersForThisContext.logMarginalLikelihood];
-                newLogMarginalLikelihoods         = [proposedClustersForThisContext.logMarginalLikelihood];
-                % marginalLikelihoodRatio           = newLogMarginalLikelihoods - oldLogMarginalLikelihoods;
-                % marginalLikelihoodRatio = marginalLikelihoodRatio - max(marginalLikelihoodRatio);
-                % logprob(1,ind) = log(sum(exp([prop.logMarginalLikelihood])));
-                % logprob(1, ind) = prop(ind).logMarginalLikelihood;
-                %logprob = newLogMarginalLikelihoods;
+                unoccupiedClusters = setdiff(1:N,occupiedClusters);
+                logprob(1, unoccupiedClusters) = -0.5 * sum(dataForThisContext(i, :).^2);
                 prob = prior(i, :, k)/sum(prior(i, :, k));
-                % prob = ones(1, N) / N;
                 fprob = cumsum(prob .* exp(logprob - max(logprob)));
+                logweight(1, m) = logweight(1, m) + log(fprob(end)) + max(logprob);
                 fprob = fprob/fprob(end);
                 u1 = rand;
                 sstar = 1;
                 while ( fprob(sstar) < u1 )
                     sstar = sstar + 1;
                 end
-                logweight(k, m) = logweight(k, m) + log(fprob(end)) + max(logprob);
-                proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct = AddRemoveItem('addGene', proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct, sstar, i, dataForThisContext, k);
-                
             end
-            s(i, k, m) = sstar;
+            s(n, k, m) = sstar;
+            proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, sstar, i, dataForThisContext, k);
+            proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct = proposedClustersForThisContext;
         end
 
     end
-    %clusterContainer = proposedClusterContainer;
-end
-ties = find(sum(logweight) == max(sum(logweight)));
-partstar = ties(randi(length(ties)));
-s = s(:, :, partstar);
-for k = 1:K
-    clusterContainer(k) = proposedClusterContainer(numbofparts * (k - 1) + partstar);
-end
-
-
-
 %{
-%%LOOP OVER ALL 'K' DATA TYPES
-for j = 1:K
-    if K > 1
-        phiIndicesForConditional = union(find(phiIndexMatrix(:,1)== j), find(phiIndexMatrix(:,2)== j));
-    else
-        phiIndicesForConditional = [];
-    end
-    notPertinentInThisContext = doNotPertainToContexti(j,:);
-    clustersForThisContext    = clusterContainer(j).clusterStruct;
-    dataForThisContext        = clusterContainer(j).data;
-    fHandle = fHandles{j};
-
-for i = 1:nGenes
-        prob     = gammaMatrix(:, j);%%conditional prior
-        %%We need to find the labels of gene i in the other contexts:
-        %%We consider all possibilities for the label of gene i
-        %%in context j:
-        labelsAcrossAllContexts            = s(i,:);
-        labelsAcrossAllContextsMatrix      = ones(N,1)*labelsAcrossAllContexts;
-        labelsAcrossAllContextsMatrix(:,j) = 1:N;
-        %%We then need to upweight the probabilities according
-        %%to the labels in the other contexts.
-        labelAgreementMatrix = (allLabelsMatrix == labelsAcrossAllContextsMatrix);
-        myPhiMatrix          = ones(size(labelAgreementMatrix,1),1)*phiVector;
-        binInd               = labelAgreementMatrix*(2.^(size(labelAgreementMatrix,2)-1:-1:0))';  %bin2dec(num2str(labelAgreementMatrix))
-        finalIndexMatrixRows = finalIndexMatrix(binInd,:);
-        finalIndexMatrixRows(:,notPertinentInThisContext) = false;
-        
-        upWeighting          = finalIndexMatrixRows.*myPhiMatrix;
-        upWeighting          = prod(1+ upWeighting(:,phiIndicesForConditional),2);
-        prob                 = prob.*upWeighting;  %%This takes care of multiplying by 1+phi
-        prob = transpose(prob); 
-
-end
-end
-
-    
-    % Set a new s for the particle filter called spart
-    spart = zeros(numbofparts, nGenes);
-    logweight = zeros(1, numbofparts);
-    partstar = zeros(1, numbofparts);
-    M = 1;
-    a = 0.5;
-    nFeatures = size(dataForThisContext, 2);
-    mu = cell(1, numbofparts);
-    mu(1, :) = {vertcat(clustersForThisContext.empiricalMeans)};
-    sigmasq = cell(1, numbofparts);
-    sigmasq(1, :) = {vertcat(clustersForThisContext.squaredResiduals) ./ repmat(vertcat(clustersForThisContext.nGenes), 1, nFeatures)};
-    % Use nGenes for n
-    % Make these greater dimension to allow for the multiple datasets; not sure yet
-    sumy = cell(1, numbofparts);
-    sumysq = cell(1, numbofparts);
-    nj = cell(1, numbofparts);
-    sumv = zeros(numbofparts, 1);
-    % Some specifications for the finite mixture model
-    sumy(1, :) = {zeros(N, nFeatures)};
-    % sumysq(1, :) = {zeros(N, nFeatures)};
-    nj(1, :) = {zeros(N, 1)};
-
-
-    %%NOW FIND THE "LIKELIHOOD" TERM
-    %% Not sure if needed?
-    proposedClustersForThisContext = clustersForThisContext;
-    occupiedClusters               = transpose(unique(s(:,j)));
-    %%LOOP OVER ALL GENES IN EACH TYPE
-    for i = 1:nGenes
-        prob     = gammaMatrix(:, j);%%conditional prior
-        %%We need to find the labels of gene i in the other contexts:
-        %%We consider all possibilities for the label of gene i
-        %%in context j:
-        labelsAcrossAllContexts            = s(i,:);
-        labelsAcrossAllContextsMatrix      = ones(N,1)*labelsAcrossAllContexts;
-        labelsAcrossAllContextsMatrix(:,j) = 1:N;
-        %%We then need to upweight the probabilities according
-        %%to the labels in the other contexts.
-        labelAgreementMatrix = (allLabelsMatrix == labelsAcrossAllContextsMatrix);
-        myPhiMatrix          = ones(size(labelAgreementMatrix,1),1)*phiVector;
-        binInd               = labelAgreementMatrix*(2.^(size(labelAgreementMatrix,2)-1:-1:0))';  %bin2dec(num2str(labelAgreementMatrix))
-        finalIndexMatrixRows = finalIndexMatrix(binInd,:);
-        finalIndexMatrixRows(:,notPertinentInThisContext) = false;
-        
-        upWeighting          = finalIndexMatrixRows.*myPhiMatrix;
-        upWeighting          = prod(1+ upWeighting(:,phiIndicesForConditional),2);
-        prob                 = prob.*upWeighting;  %%This takes care of multiplying by 1+phi
-        prob = transpose(prob); 
-        for part = 1:numbofparts
-        % Sample vn - not needed?
-        % sumv(part) = sumv(part) + samplev_NGG(NGGlambda, sumv(part), i, length(nj{1, part}), M, gamma);
-        if ( i == 1 ) % If we're at the first data point
-            sumy{1, part}(1, :) = dataForThisContext(i, :);
-            nj{1, part}(1) = 1;
-            logweight(part) = 0;
-            spart(part, i) = 1;
-        else
-            % Prob uses the prob calculated previously
-            % prob = [(nj{1, part}-gamma)  (M*(NGGlambda + sumv(part))^gamma)];
-            prob = prob / sum(prob); % Normalising
-            divisor = repmat(nj{1, part} / a + 1 / (1 - a), 1, nFeatures);
-            mustar = (sumy{1, part} / a + mu{1, part} / (1 - a)) ./ divisor;
-            varstar = sigmasq{1, part} ./ divisor;
-            logprob = zeros(N, nFeatures);
-            for g  = 1:N
-                logprob(g, :) = - 0.5 * (dataForThisContext(i, :) - mustar(g, :)).^2 ./ (a * sigmasq{1, part}(g, :) + varstar(g, :)) - 0.5 * log(a * sigmasq{1, part}(g, :) + varstar(g, :));
-            end
-            %logprob = - 0.5 * (data(i, :) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
-            logprob = transpose(log(sum(exp(logprob), 2)));
-            fprob = cumsum(prob .* exp(logprob - max(logprob)));
-            logweight(part) = logweight(part) + log(fprob(end)) + max(logprob);
-            fprob = fprob / fprob(end);
-            u1 = rand;
-            sstar = 1;
-            while ( fprob(sstar) < u1 )
-                sstar = sstar + 1;
-            end
-            
-            spart(part, i) = sstar;
-            nj{1, part}(spart(part, i)) = nj{1, part}(spart(part, i)) + 1;
-            sumy{1, part}(spart(part, i), :) = sumy{1, part}(spart(part, i), :) + dataForThisContext(i, :);
-        end
-    end
-    
-    
     ESS = sum(exp(logweight - max(logweight)))^2 / sum(exp(logweight - max(logweight)).^2);
-    % This to be done at all steps?
+    partstar = zeros(1, numbofparts); 
     if ( ESS < 0.5 * numbofparts )
         fprob = cumsum(exp(logweight - max(logweight)));
         fprob = fprob / fprob(end);
         
         u1 = rand / numbofparts;
         m = 1;
-        it = 1;
-        while ( m <= numbofparts )
+        iter = 1;
+        while (m <= numbofparts )
             while ( (u1 < fprob(m)) && (m <= numbofparts) )
-                partstar(it) = m;
+                partstar(iter) = m;
                 u1 = u1 + 1 / numbofparts;
-                it = it + 1;
+                iter = iter + 1;
             end
             m = m + 1;
         end
         
-        sumy = sumy(1, partstar);
-        nj = nj(1, partstar);
-        sumv = sumv(partstar);
-        spart = spart(partstar, :);
-        
-        logweight = zeros(1, numbofparts);
-        
-        for it = 1:numbofparts
-            for m = 1:(i-1)
-                nj{1, it}(spart(it, m)) = nj{1, it}(spart(it, m)) - 1;
-                sumy{1, it}(spart(it, m), :) = sumy{1, it}(spart(it, m), :) - dataForThisContext(j, :);
-                
-                % This line isn't needed
-                if ( nj{1, it}(spart(it, j)) == 0 )
-                    nj{1, it}(spart(it, j)) = [];
-                    sumy{1, it}(spart(it, j)) = [];
-                    spart(it, :) = spart(it, :) - (spart(it, :) > spart(it, j));
-                end
-                
-                
-                divisor = repmat(nj{1, part} / a + 1 / (1 - a), 1, nFeatures);
-                mustar = (sumy{1, part} / a + mu{1, part} / (1 - a)) ./ divisor;
-                varstar = sigmasq{1, part} ./ divisor;
-                logprob = zeros(N, nFeatures);
-                for g  = 1:N
-                    logprob(g, :) = - 0.5 * (dataForThisContext(i, :) - mustar(g, :)).^2 ./ (a * sigmasq{1, part}(g, :) + varstar(g, :)) - 0.5 * log(a * sigmasq{1, part}(g, :) + varstar(g, :));
-                end
-                %logprob = - 0.5 * (data(i, :) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar);
-                logprob = transpose(log(sum(exp(logprob), 2)));
-                prob = prob .* exp(- 0.5 * (dataForThisContext(j) - mustar).^2 ./ (a * sigmasq + varstar) - 0.5 * log(a * sigmasq + varstar));
-                
-                fprob = cumsum(prob);
-                fprob = fprob / fprob(end);
-                u1 = rand;
-                sstar = 1;
-                while ( fprob(sstar) < u1 )
-                    sstar = sstar + 1;
-                end
-                spart(part, i) = sstar;
-                nj{1, part}(spart(part, i)) = nj{1, part}(spart(part, i)) + 1;
-                sumy{1, part}(spart(part, i), :) = sumy{1, part}(spart(part, i), :) + dataForThisContext(i, :);
+        s = s(:, :, partstar);
+        for ind = 1:numbofparts
+            for k = 1:K
+                proposedClusterContainer(numbofparts * (k - 1) + ind) = proposedClusterContainer(numbofparts * (k - 1) + partstar(ind));
             end
         end
-    elseif (i == nGenes )
+        logweight = logweight(1, partstar);        
+    elseif (i == nGenes)
         fprob = cumsum(exp(logweight - max(logweight)));
         fprob = fprob / fprob(end);
+        
         u1 = rand / numbofparts;
         m = 1;
-        it = 1;
+        iter = 1;
         while ( m <= numbofparts )
             while ( (u1 < fprob(m)) && (m <= numbofparts) )
-                partstar(it) = m;
+                partstar(iter) = m;
                 u1 = u1 + 1 / numbofparts;
-                it = it + 1;
+                iter = iter + 1;
             end
             m = m + 1;
         end
-        
-        sumy = sumy(1, partstar);
-        nj = nj(1, partstar);
-        sumv = sumv(partstar);
-        spart = spart(partstar, :);
+        logweight = logweight(1, partstar);
+        s = s(:, :, partstar);
+        for ind = 1:numbofparts
+            for k = 1:K
+                proposedClusterContainer(numbofparts * (k - 1) + ind) = proposedClusterContainer(numbofparts * (k - 1) + partstar(ind));
+            end
+        end              
     end
-
-end
-%{
-ari = zeros(1, numbofparts);
-  for i1 = 1:(numbofparts - 1)
-    for j1 = (1+i1):numbofparts
-      ri = rand_index(spart(:,i1), spart(:, j1), 'adjusted') / (numbofparts - 1);
-      ari(1, i1) = ari(1, i1) + ri;
-      ari(1, j1) = ari(1, j1) + ri;
-    end
-  end
-ties = find(ari == max(ari));
-partInd = ties(randi(length(ties)));
 %}
-
+fprintf(repmat('\b',1,numel(prog_bar))); 
+end
+if(exist('randIndex'))
+    [B, I] = sort(randIndex);
+    s = s(I, :, :);
+end
 ties = find(logweight == max(logweight));
-partInd = ties(randi(length(ties)));
-oldLabel = s;
-s(:, j) = spart(partInd, :);
-
-for i = 1:nGenes
-  if(s(i, j) ~= oldLabel(i, j))
-    proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, s(i, j), i, dataForThisContext, j);
-    clustersForThisContext(oldLabel(i, j)) = proposedClustersForThisContext(oldLabel(i, j));
-    clustersForThisContext(s(i,j))   = proposedClustersForThisContext(s(i,j));
-  end
+partstar = ties(randi(length(ties)));
+s = s(:, :, partstar);
+tabulate(s(:,1));
+for k = 1:K
+    clusterContainer(k) = proposedClusterContainer(numbofparts * (k - 1) + partstar);
 end
 
-clusterContainer(j).clusterStruct = clustersForThisContext;
-end
-%}
 end
 %%----------------------------------------------------------------------
 %% INITIALISE THE MCMC FILE --------------------------------------------

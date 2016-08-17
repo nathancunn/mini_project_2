@@ -44,8 +44,8 @@ end
 %%----------------------------------------------------------------------
 %% WRITE DATA SETS OUT TO FILE -----------------------------------------
 %%----------------------------------------------------------------------
-for k=1:2
-  outputFile = [outputPath, 'GaussianTestData', num2str(k),'.csv'];
+for k=1:5
+  outputFile = [outputPath, 'aGaussianTestData', num2str(k),'.csv'];
   %%ADD A NOISE REALISATION TO THE DATA
   outputData = data + randn(nDataItems, nFeatures);  
   %%WRITE HEADER TO FILE
