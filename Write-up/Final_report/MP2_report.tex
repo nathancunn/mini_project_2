@@ -1,61 +1,110 @@
 \documentclass[10pt,a4paper]{report}
-\usepackage{algorithm2e}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
 \usepackage{amsfonts}
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{bbm}
+\usepackage{fullpage}
 \usepackage{graphicx}
+\usepackage[numbers]{natbib}
 \usepackage[utf8]{inputenc}
 \author{Nathan Cunningham}
-\title{Multiple dataset integration  - with SMC}
+\title{Application of sequential Monte Carlo methods for the clustering of multiple datasets}
 \begin{document}
 
+\maketitle
 
+\begin{abstract}
+In this paper I 
+\end{abstract}
 \section{Introduction}
-Bit on cluster analysis, bit on multiple datasets, applications of this to e.g. gene expression data
+
+Bit on cluster analysis, bit on multiple datasets, applications of this to e.g. gene expression data.
+
+A little bit on sequential monte carlo methods.
+
+
+
 
 
 
 \section{Literature}
-MDI paper summary
+In their paper \cite{kirk2012bayesian}, \citeauthor{kirk2012bayesian} propose an unsupervised method for the integration of multiple datasets. Their work is applicable to a number of data types: gaussian, gaussian processes, time series data, multinomial data.
+MDI paper summary \cite{kirk2012bayesian}
 
-SMC paper summary
+SMC paper summary \cite{griffin2014sequential}
 
 Maybe bit on Sarah Wade's paper?
 \cite{wade2015bayesian}
 \section{Methods}
-Algorithm used for current paper
-
-\begin{algorithm}[H]
- \KwData{Prior}
- \KwResult{Clustering allocation }
- \For{i = 1,\dots, N}{
-  \For{m = 1,\dots, M}{
-  \For{k = 1,\dots, K}{
-  Sample $c^{(m)}_{i, k}$\;
-  $q(c^{(m)}_{i,k} = k) \propto k^*(y_{i,k}|c_{i,j}^{(m)} = k) \gamma_{k, j}$
-  
-  $\xi_m = \xi_m \sum_k \gamma_{k, j}k^*(y_{i,k}|c_{i,j}^{(m)} = k)$ 
-  
-  $\xi_m = \xi_m \prod (1+\phi_{k, l} \mathbbm{1}(-))$
-  }
-  }
-  }
-  \eIf{understand}{
-   go to next section\;
-   current section becomes this one\;
-   }{
-   go back to the beginning of current section\;
- }
- \caption{How to write algorithms}
+The algorithm presented here is a combination of the work by \citeauthor{griffin2014sequential} and \citeauthor{kirk2012bayesian}
+\begin{algorithm}
+\caption{Gibbs sampler}
+ \begin{algorithmic}[1]
+  \State Initialise $\Gamma$ matrix of prior allocation weights and $\Phi$ matrix of dataset concordance values
+  \For{i = 1, \dots, number of iterations}
+  \State Conditional on $\Gamma_{i-1}$ and $\Phi_{i-1}$ update the cluster labels, $c_{i}$, using alg. \ref{alg:pf}
+  \State Conditional on $c_{i}$ update $\Gamma_i$ and $\Phi_i$
+  \EndFor
+\end{algorithmic}
 \end{algorithm}
+
+
+\begin{algorithm}
+\caption{Particle filter to update cluster allocations}
+\label{alg:pf}
+ \begin{algorithmic}[1]
+  \For{i = 1, \dots, n} \Comment{Loop over observations}
+  \For{m = 1, \dots, M} \Comment{Loop over particles}
+  \For{j = 1, \dots, d} \Comment{Loop over datasets}
+  \State Sample $c^{(m)}_{i, j}$ \Comment{Propose a cluster for each datum}
+  \State $q(c^{(m)}_{i,j} = k) \propto k^*(y_{i,j}|c_{i,j}^{(m)} = k) \gamma_{i, k, j}$ 
+  \State $\xi^{(m)} =  \xi^{(m)} \times \gamma_{i, k, j}(1+\phi_{i})k^*(y_{i,k}|c_{i,j}^{(m)} = k)$ 
+  \EndFor
+  \EndFor
+  \State Resample particles according to $\xi^{(m)}$
+  \EndFor
+  \State Update cluster labels using allocation in particle with largest $\xi^{(m)}$
+
+\end{algorithmic}
+\end{algorithm}
+
+Where
+\begin{equation}
+\label{eq:likelihood}
+k^*(y_{i, k}|c_{i, k}^{(m)} = k) = (\mathbf{y_{i, k}} - \mathbf{\mu_k}) \mathbf{\Sigma^{-1}} (\mathbf{y_{i, k}} - \mathbf{\mu_k})^\top
+\end{equation}
+\begin{equation}
+\label{eq:phi}
+\Phi \text{ is a measure of cluster label correspondence across datasets}
+\end{equation}
+\begin{equation}
+\label{eq:gamma}
+\gamma_{i, k, j} \text{ is a prior weight for assigning observation i, in dataset k to cluster j}
+\end{equation}
 \section{Example application}
+Comparison of this versus independent clustering of the datasets
+
+Use on multinomial data and gaussian data
+
 
 \section{Conclusions and proposals for future work}
+Some success. Improvements over independent clustering...?
+
+Future work needed: Updating of concordance values by particle? Outputting of more than one particle?
+
+Parallelisation of the code to speed things up.
+
+Feature selection in cluster analysis
+
+Application to real-life data (genomics England)
 
 
 
 
-\bibliographystyle{plain}
+
+\bibliographystyle{plainnat}
 \bibliography{bibliography.bib}
 \end{document}

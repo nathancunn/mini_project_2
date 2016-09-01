@@ -1,0 +1,20 @@
+uniqueIdentifier = 16112;
+nComponents = 4;
+nSamples    = 10000;
+hyperSamplingFrequency = 1;
+samplingFrequency = 1;
+initialise = true;
+numbofparts = 10;
+fileName1   = 'Data/datagen/gaussian1.csv';
+fileName2   = 'Data/datagen/gaussian2.csv';
+fileName3   = 'Data/datagen/multinom1.csv';
+fileName4   = 'Data/datagen/multinom2.csv';
+dataType1   = 'Gaussian';
+dataType2   = 'Gaussian';
+dataType3   = 'Multinomial';
+dataType4   = 'Multinomial';
+numbofparts = 10;
+MDI('test_results/', nComponents, nSamples, {fileName1, fileName2,fileName3, fileName4},...
+    {dataType1, dataType2, dataType3, dataType4},...
+    hyperSamplingFrequency,...
+    samplingFrequency, uniqueIdentifier, initialise, numbofparts);

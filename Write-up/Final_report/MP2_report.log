@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.8.3)  11 AUG 2016 11:25
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.8.3)  1 SEP 2016 14:21
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -24,10 +24,165 @@ File: size10.clo 2014/09/29 v1.4h Standard LaTeX file (size option)
 \belowcaptionskip=\skip42
 \bibindent=\dimen102
 )
+(/usr/local/texlive/2016/texmf-dist/tex/latex/algorithms/algorithm.sty
+Package: algorithm 2009/08/24 v0.1 Document Style `algorithm' - floating enviro
+nment
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/float/float.sty
+Package: float 2001/11/08 v1.3d Float enhancements (AL)
+\c@float@type=\count88
+\float@exts=\toks14
+\float@box=\box26
+\@float@everytoks=\toks15
+\@floatcapt=\box27
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/base/ifthen.sty
+Package: ifthen 2014/09/29 v1.1c Standard LaTeX ifthen package (DPC)
+)
+\@float@every@algorithm=\toks16
+\c@algorithm=\count89
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/algorithmicx/algorithmicx.sty
+Package: algorithmicx 2005/04/27 v1.2 Algorithmicx
+
+Document Style algorithmicx 1.2 - a greatly improved `algorithmic' style
+\c@ALG@line=\count90
+\c@ALG@rem=\count91
+\c@ALG@nested=\count92
+\ALG@tlm=\skip43
+\ALG@thistlm=\skip44
+\c@ALG@Lnr=\count93
+\c@ALG@blocknr=\count94
+\c@ALG@storecount=\count95
+\c@ALG@tmpcounter=\count96
+\ALG@tmplength=\skip45
+) (/usr/local/texlive/2016/texmf-dist/tex/latex/algorithmicx/algpseudocode.sty
+Package: algpseudocode 
+
+Document Style - pseudocode environments for use with the `algorithmicx' style
+) (/usr/local/texlive/2016/texmf-dist/tex/latex/amsfonts/amsfonts.sty
+Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
+\@emptytoks=\toks17
+\symAMSa=\mathgroup4
+\symAMSb=\mathgroup5
+LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
+(Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/amsmath/amsmath.sty
+Package: amsmath 2016/06/28 v2.15d AMS math features
+\@mathmargin=\skip46
+
+For additional information on amsmath, use the `?' option.
+(/usr/local/texlive/2016/texmf-dist/tex/latex/amsmath/amstext.sty
+Package: amstext 2000/06/29 v2.01 AMS text
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/amsmath/amsgen.sty
+File: amsgen.sty 1999/11/30 v2.0 generic functions
+\@emptytoks=\toks18
+\ex@=\dimen103
+))
+(/usr/local/texlive/2016/texmf-dist/tex/latex/amsmath/amsbsy.sty
+Package: amsbsy 1999/11/29 v1.2d Bold Symbols
+\pmbraise@=\dimen104
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/amsmath/amsopn.sty
+Package: amsopn 2016/03/08 v2.02 operator names
+)
+\inf@bad=\count97
+LaTeX Info: Redefining \frac on input line 199.
+\uproot@=\count98
+\leftroot@=\count99
+LaTeX Info: Redefining \overline on input line 297.
+\classnum@=\count100
+\DOTSCASE@=\count101
+LaTeX Info: Redefining \ldots on input line 394.
+LaTeX Info: Redefining \dots on input line 397.
+LaTeX Info: Redefining \cdots on input line 518.
+\Mathstrutbox@=\box28
+\strutbox@=\box29
+\big@size=\dimen105
+LaTeX Font Info:    Redeclaring font encoding OML on input line 634.
+LaTeX Font Info:    Redeclaring font encoding OMS on input line 635.
+\macc@depth=\count102
+\c@MaxMatrixCols=\count103
+\dotsspace@=\muskip10
+\c@parentequation=\count104
+\dspbrk@lvl=\count105
+\tag@help=\toks19
+\row@=\count106
+\column@=\count107
+\maxfields@=\count108
+\andhelp@=\toks20
+\eqnshift@=\dimen106
+\alignsep@=\dimen107
+\tagshift@=\dimen108
+\tagwidth@=\dimen109
+\totwidth@=\dimen110
+\lineht@=\dimen111
+\@envbody=\toks21
+\multlinegap=\skip47
+\multlinetaggap=\skip48
+\mathdisplay@stack=\toks22
+LaTeX Info: Redefining \[ on input line 2739.
+LaTeX Info: Redefining \] on input line 2740.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/amsfonts/amssymb.sty
+Package: amssymb 2013/01/14 v3.01 AMS font symbols
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/bbm-macros/bbm.sty
+Package: bbm 1999/03/15 V 1.2 provides fonts for set symbols - TH
+LaTeX Font Info:    Overwriting math alphabet `\mathbbm' in version `bold'
+(Font)                  U/bbm/m/n --> U/bbm/bx/n on input line 33.
+LaTeX Font Info:    Overwriting math alphabet `\mathbbmss' in version `bold'
+(Font)                  U/bbmss/m/n --> U/bbmss/bx/n on input line 35.
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/preprint/fullpage.sty
+Package: fullpage 1999/02/23 1.1 (PWD)
+\FP@margin=\skip49
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/graphicx.sty
+Package: graphicx 2014/10/28 v1.0g Enhanced LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/keyval.sty
+Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
+\KV@toks@=\toks23
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/graphics.sty
+Package: graphics 2016/07/10 v1.0t Standard LaTeX Graphics (DPC,SPQR)
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/trig.sty
+Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
+File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
+)
+Package graphics Info: Driver file: pdftex.def on input line 99.
+
+(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics-def/pdftex.def
+File: pdftex.def 2016/07/10 v0.06j Graphics/color for pdfTeX
+
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/infwarerr.sty
+Package: infwarerr 2016/05/16 v1.4 Providing info/warning/error messages (HO)
+)
+(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
+Package: ltxcmds 2016/05/16 v1.23 LaTeX kernel commands for general use (HO)
+)
+\Gread@gobject=\count109
+))
+\Gin@req@height=\dimen112
+\Gin@req@width=\dimen113
+)
+(/usr/local/texlive/2016/texmf-dist/tex/latex/natbib/natbib.sty
+Package: natbib 2010/09/13 8.31b (PWD, AO)
+\bibhang=\skip50
+\bibsep=\skip51
+LaTeX Info: Redefining \cite on input line 694.
+\c@NAT@ctr=\count110
+)
 (/usr/local/texlive/2016/texmf-dist/tex/latex/base/inputenc.sty
 Package: inputenc 2015/03/17 v1.2c Input encoding file
-\inpenc@prehook=\toks14
-\inpenc@posthook=\toks15
+\inpenc@prehook=\toks24
+\inpenc@posthook=\toks25
 
 (/usr/local/texlive/2016/texmf-dist/tex/latex/base/utf8.def
 File: utf8.def 2016/02/28 v1.1s UTF-8 support for inputenc
@@ -338,198 +493,35 @@ Now handling font encoding U ...
    defining Unicode char U+2122 (decimal 8482)
    defining Unicode char U+2423 (decimal 9251)
 ))
-(/usr/local/texlive/2016/texmf-dist/tex/latex/amsmath/amsmath.sty
-Package: amsmath 2016/06/28 v2.15d AMS math features
-\@mathmargin=\skip43
-
-For additional information on amsmath, use the `?' option.
-(/usr/local/texlive/2016/texmf-dist/tex/latex/amsmath/amstext.sty
-Package: amstext 2000/06/29 v2.01 AMS text
-
-(/usr/local/texlive/2016/texmf-dist/tex/latex/amsmath/amsgen.sty
-File: amsgen.sty 1999/11/30 v2.0 generic functions
-\@emptytoks=\toks16
-\ex@=\dimen103
-))
-(/usr/local/texlive/2016/texmf-dist/tex/latex/amsmath/amsbsy.sty
-Package: amsbsy 1999/11/29 v1.2d Bold Symbols
-\pmbraise@=\dimen104
-)
-(/usr/local/texlive/2016/texmf-dist/tex/latex/amsmath/amsopn.sty
-Package: amsopn 2016/03/08 v2.02 operator names
-)
-\inf@bad=\count88
-LaTeX Info: Redefining \frac on input line 199.
-\uproot@=\count89
-\leftroot@=\count90
-LaTeX Info: Redefining \overline on input line 297.
-\classnum@=\count91
-\DOTSCASE@=\count92
-LaTeX Info: Redefining \ldots on input line 394.
-LaTeX Info: Redefining \dots on input line 397.
-LaTeX Info: Redefining \cdots on input line 518.
-\Mathstrutbox@=\box26
-\strutbox@=\box27
-\big@size=\dimen105
-LaTeX Font Info:    Redeclaring font encoding OML on input line 634.
-LaTeX Font Info:    Redeclaring font encoding OMS on input line 635.
-\macc@depth=\count93
-\c@MaxMatrixCols=\count94
-\dotsspace@=\muskip10
-\c@parentequation=\count95
-\dspbrk@lvl=\count96
-\tag@help=\toks17
-\row@=\count97
-\column@=\count98
-\maxfields@=\count99
-\andhelp@=\toks18
-\eqnshift@=\dimen106
-\alignsep@=\dimen107
-\tagshift@=\dimen108
-\tagwidth@=\dimen109
-\totwidth@=\dimen110
-\lineht@=\dimen111
-\@envbody=\toks19
-\multlinegap=\skip44
-\multlinetaggap=\skip45
-\mathdisplay@stack=\toks20
-LaTeX Info: Redefining \[ on input line 2739.
-LaTeX Info: Redefining \] on input line 2740.
-)
-(/usr/local/texlive/2016/texmf-dist/tex/latex/amsfonts/amsfonts.sty
-Package: amsfonts 2013/01/14 v3.01 Basic AMSFonts support
-\symAMSa=\mathgroup4
-\symAMSb=\mathgroup5
-LaTeX Font Info:    Overwriting math alphabet `\mathfrak' in version `bold'
-(Font)                  U/euf/m/n --> U/euf/b/n on input line 106.
-)
-(/usr/local/texlive/2016/texmf-dist/tex/latex/amsfonts/amssymb.sty
-Package: amssymb 2013/01/14 v3.01 AMS font symbols
-)
-(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/graphicx.sty
-Package: graphicx 2014/10/28 v1.0g Enhanced LaTeX Graphics (DPC,SPQR)
-
-(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/keyval.sty
-Package: keyval 2014/10/28 v1.15 key=value parser (DPC)
-\KV@toks@=\toks21
-)
-(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/graphics.sty
-Package: graphics 2016/07/10 v1.0t Standard LaTeX Graphics (DPC,SPQR)
-
-(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics/trig.sty
-Package: trig 2016/01/03 v1.10 sin cos tan (DPC)
-)
-(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics-cfg/graphics.cfg
-File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
-)
-Package graphics Info: Driver file: pdftex.def on input line 99.
-
-(/usr/local/texlive/2016/texmf-dist/tex/latex/graphics-def/pdftex.def
-File: pdftex.def 2016/07/10 v0.06j Graphics/color for pdfTeX
-
-(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/infwarerr.sty
-Package: infwarerr 2016/05/16 v1.4 Providing info/warning/error messages (HO)
-)
-(/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/ltxcmds.sty
-Package: ltxcmds 2016/05/16 v1.23 LaTeX kernel commands for general use (HO)
-)
-\Gread@gobject=\count100
-))
-\Gin@req@height=\dimen112
-\Gin@req@width=\dimen113
-)
-(/usr/local/texlive/2016/texmf-dist/tex/latex/bbm-macros/bbm.sty
-Package: bbm 1999/03/15 V 1.2 provides fonts for set symbols - TH
-LaTeX Font Info:    Overwriting math alphabet `\mathbbm' in version `bold'
-(Font)                  U/bbm/m/n --> U/bbm/bx/n on input line 33.
-LaTeX Font Info:    Overwriting math alphabet `\mathbbmss' in version `bold'
-(Font)                  U/bbmss/m/n --> U/bbmss/bx/n on input line 35.
-)
-(/usr/local/texlive/2016/texmf-dist/tex/latex/algorithm2e/algorithm2e.sty
-Package: algorithm2e 2013/01/06 v5.00 algorithms environments
-\c@AlgoLine=\count101
-
-(/usr/local/texlive/2016/texmf-dist/tex/latex/base/ifthen.sty
-Package: ifthen 2014/09/29 v1.1c Standard LaTeX ifthen package (DPC)
-)
-\algocf@hangindent=\skip46
-
-(/usr/local/texlive/2016/texmf-dist/tex/latex/tools/xspace.sty
-Package: xspace 2014/10/28 v1.13 Space after command names (DPC,MH)
-)
-(/usr/local/texlive/2016/texmf-dist/tex/latex/relsize/relsize.sty
-Package: relsize 2013/03/29 ver 4.1
-)
-********************************************************
-Package `algorithm2e' Release 5.1 -- october 19 2015 --
-- algorithm2e-announce@lirmm.fr mailing list for announcement about releases
-- algorithm2e-discussion@lirmm.fr mailing list for discussion about package
-subscribe by emailing sympa@lirmm.fr with 'subscribe <list> <firstname name>'
-- Author: Christophe Fiorio (christophe.fiorio@umontpellier.fr)
-********************************************************
-\skiptotal=\skip47
-\skiplinenumber=\skip48
-\skiprule=\skip49
-\skiphlne=\skip50
-\skiptext=\skip51
-\skiplength=\skip52
-\algomargin=\skip53
-\skipalgocfslide=\skip54
-\algowidth=\dimen114
-\inoutsize=\dimen115
-\inoutindent=\dimen116
-\interspacetitleruled=\dimen117
-\interspacealgoruled=\dimen118
-\interspacetitleboxruled=\dimen119
-\algocf@ruledwidth=\skip55
-\algocf@inoutbox=\box28
-\algocf@inputbox=\box29
-\AlCapSkip=\skip56
-\AlCapHSkip=\skip57
-\algoskipindent=\skip58
-\algocf@nlbox=\box30
-\algocf@hangingbox=\box31
-\algocf@untilbox=\box32
-\algocf@skipuntil=\skip59
-\algocf@capbox=\box33
-\algoheightruledefault=\skip60
-\algoheightrule=\skip61
-\algotitleheightruledefault=\skip62
-\algotitleheightrule=\skip63
-\c@algocfline=\count102
-\c@algocfproc=\count103
-\c@algocf=\count104
-\algocf@algoframe=\box34
-\algocf@algobox=\box35
-) (./MP2_report.aux)
+(./MP2_report.aux)
 \openout1 = `MP2_report.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 11.
-LaTeX Font Info:    ... okay on input line 11.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 15.
+LaTeX Font Info:    ... okay on input line 15.
 
 (/usr/local/texlive/2016/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count105
-\scratchdimen=\dimen120
-\scratchbox=\box36
-\nofMPsegments=\count106
-\nofMParguments=\count107
-\everyMPshowfont=\toks22
-\MPscratchCnt=\count108
-\MPscratchDim=\dimen121
-\MPnumerator=\count109
-\makeMPintoPDFobject=\count110
-\everyMPtoPDFconversion=\toks23
+\scratchcounter=\count111
+\scratchdimen=\dimen114
+\scratchbox=\box30
+\nofMPsegments=\count112
+\nofMParguments=\count113
+\everyMPshowfont=\toks26
+\MPscratchCnt=\count114
+\MPscratchDim=\dimen115
+\MPnumerator=\count115
+\makeMPintoPDFobject=\count116
+\everyMPtoPDFconversion=\toks27
 ) (/usr/local/texlive/2016/texmf-dist/tex/generic/oberdiek/pdftexcmds.sty
 Package: pdftexcmds 2016/05/21 v0.22 Utility functions of pdfTeX for LuaTeX (HO
 )
@@ -579,54 +571,47 @@ G,.JBIG2,.JB2,.eps]
 File: epstopdf-sys.cfg 2010/07/13 v1.3 Configuration of (r)epstopdf for TeX Liv
 e
 ))
-LaTeX Font Info:    Try loading font information for U+msa on input line 44.
+LaTeX Font Info:    Try loading font information for U+msa on input line 17.
 
 (/usr/local/texlive/2016/texmf-dist/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Try loading font information for U+msb on input line 44.
+LaTeX Font Info:    Try loading font information for U+msb on input line 17.
 
 (/usr/local/texlive/2016/texmf-dist/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
-)
-LaTeX Font Info:    Try loading font information for U+bbm on input line 44.
+) [1
 
-(/usr/local/texlive/2016/texmf-dist/tex/latex/bbm-macros/ubbm.fd
-File: ubbm.fd 1999/03/15 V 1.2 Font definition for bbm font - TH
-)
-(./MP2_report.bbl [1
+{/usr/local/texlive/2016/texmf-var/fonts/map/pdftex/updmap/pdftex.map}] [1] [1]
 
-{/usr/local/texlive/2016/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]) [2
+(./MP2_report.bbl [2]) [3
 
-] (./MP2_report.aux) )
-(\end occurred inside a group at level 1)
-
-### simple group (level 1) entered at line 1061 ({)
-### bottom level 
+] (./MP2_report.aux) ) 
 Here is how much of TeX's memory you used:
- 3692 strings out of 493013
- 50586 string characters out of 6133329
- 121828 words of memory out of 5000000
- 7174 multiletter control sequences out of 15000+600000
- 7599 words of font info for 31 fonts, out of 8000000 for 9000
+ 3719 strings out of 493013
+ 48254 string characters out of 6133329
+ 114552 words of memory out of 5000000
+ 7185 multiletter control sequences out of 15000+600000
+ 12767 words of font info for 49 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 40i,18n,28p,316b,1943s stack positions out of 5000i,500n,10000p,200000b,80000s
- </homes/cunningh/.texlive2016/texmf-var/fonts/pk/ljfour/public
-/bbm/bbm10.600pk></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfont
-s/cm/cmbx10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts
-/cm/cmbx12.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/
-cm/cmex10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/c
-m/cmmi10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm
-/cmmi7.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/c
-mr10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr
-7.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10
-.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.p
-fb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pf
-b>
-Output written on MP2_report.pdf (2 pages, 108606 bytes).
+ 40i,6n,28p,296b,280s stack positions out of 5000i,500n,10000p,200000b,80000s
+</usr/local/texlive/2016/texmf-dist/fonts/type1/public/am
+sfonts/cm/cmbx10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/ams
+fonts/cm/cmbx12.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsf
+onts/cm/cmbx7.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfon
+ts/cm/cmmi10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfont
+s/cm/cmmi7.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/
+cm/cmr10.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm
+/cmr12.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/c
+mr17.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr
+7.pfb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.p
+fb></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pf
+b></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb>
+</usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
+Output written on MP2_report.pdf (5 pages, 147143 bytes).
 PDF statistics:
- 56 PDF objects out of 1000 (max. 8388607)
- 40 compressed objects within 1 object stream
+ 72 PDF objects out of 1000 (max. 8388607)
+ 51 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 

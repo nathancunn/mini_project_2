@@ -1,10 +1,11 @@
 outputDir = '';
 numberOfComponents = 5;
 numbofits = 100;
-fileNames = {'Data/synth_data/testData1.csv', 'Data/synth_data/testData2.csv'};
+fileNames = {'Data/datagen/multinom1.csv', 'Data/datagen/multinom2.csv'};
 %fileNames = {'Data/GaussianTestData1.csv', 'Data/GaussianTestData2.csv'};
 %fileNames = {'Data/synth_data/GaussianTestData1.csv', 'Data/synth_data/GaussianTestData2.csv'};
 dataTypes = {'Gaussian', 'Gaussian'};
+dataTypes = {'Multinomial', 'Multinomial'};
 hyperSamplingFrequency = 1;
 samplingFrequency = 10;
 uniqueIdentifier = 2;

@@ -1,8 +1,26 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{3}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
 
-\bibitem{wade2015bayesian}
+\bibitem[Griffin(2014)]{griffin2014sequential}
+JE~Griffin.
+\newblock Sequential monte carlo methods for mixtures with normalized random
+  measures with independent increments priors.
+\newblock \emph{Statistics and Computing}, pages 1--15, 2014.
+
+\bibitem[Kirk et~al.(2012)Kirk, Griffin, Savage, Ghahramani, and
+  Wild]{kirk2012bayesian}
+Paul Kirk, Jim~E Griffin, Richard~S Savage, Zoubin Ghahramani, and David~L
+  Wild.
+\newblock Bayesian correlated clustering to integrate multiple datasets.
+\newblock \emph{Bioinformatics}, 28\penalty0 (24):\penalty0 3290--3297, 2012.
+
+\bibitem[Wade and Ghahramani(2015)]{wade2015bayesian}
 Sara Wade and Zoubin Ghahramani.
 \newblock Bayesian cluster analysis: Point estimation and credible balls.
-\newblock {\em arXiv preprint arXiv:1505.03339}, 2015.
+\newblock \emph{arXiv preprint arXiv:1505.03339}, 2015.
 
 \end{thebibliography}

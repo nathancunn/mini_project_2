@@ -1058,8 +1058,10 @@ logweight = zeros(1, numbofparts);
 partstar = zeros(1, numbofparts);
 aprior = [1 1];
 a = betarnd(aprior(1), aprior(2), numbofparts, 1);
+if(exist('mnprior'))
+    clear mnprior;
+end
 
-% Replicate the cluster container for each particle and each data set
 proposedClusterContainer = repelem(clusterContainer, numbofparts);
 if(rand >= 0)
     randIndex = randperm(nGenes);
@@ -1086,21 +1088,49 @@ for n = 1:nGenes
                 logprob = zeros(1, N);
                 occupiedClusters = unique(s(1:(n - 1), k, m));
                 occupiedClusters = find([proposedClustersForThisContext.nGenes] ~= 0);
-                for ind1 = 1:length(occupiedClusters)
-                    ind = occupiedClusters(ind1);
-                    %meanCentred = dataForThisContext(i, :) - proposedClustersForThisContext(ind).empiricalMeans;
-                        mu = sum(dataForThisContext(find(proposedClustersForThisContext(ind).logicalGeneIDs), :)) / a(m);
-                        mu = mu / (proposedClustersForThisContext(ind).nGenes / a(m) + 1 / (1 - a(m)));
-                        meanCentred = dataForThisContext(i, :) - mu;
-                        sigma = eye(size(dataForThisContext, 2));
-                        sigmaInverse = sigma .* (proposedClustersForThisContext(ind).nGenes / a(m) + 1 / (1 - a(m)));
-                        logprob(1, ind) = - 0.5 * (meanCentred * sigmaInverse * meanCentred.');
-                end
                 unoccupiedClusters = setdiff(1:N,occupiedClusters);
-                logprob(1, unoccupiedClusters) = -0.5 * sum(dataForThisContext(i, :).^2);
+                switch func2str(fHandles{k})
+                    case 'Multinomial'
+                        if(~exist('mnprior'))
+                        numbOfCats = length(proposedClustersForThisContext(1).dataLevels);
+                        mnprior = gamrnd(ones(numbOfCats, proposedClustersForThisContext(1).nFeatures, K, numbofparts) / 2, 1);
+                        mnprior = mnprior ./ repmat(sum(mnprior), numbOfCats, 1, 1, 1);
+                        end  
+                        for ind1 = 1:length(occupiedClusters)
+                            ind = occupiedClusters(ind1);
+                            clustermnprior = mnprior(:, :, k, m);
+                            for q = 1:proposedClustersForThisContext(ind).nFeatures
+                                mnprob = clustermnprior(:, q);
+                                %emp = proposedClustersForThisContext(ind).dataCounts(dataForThisContext(i, q),q) / proposedClustersForThisContext(ind).nGenes;
+                                %emp_prob = emp * a(m) + mnprob(dataForThisContext(i, q), 1) * (1 - a(m));
+                                emp = proposedClustersForThisContext(ind).dataCounts(dataForThisContext(i, q),q) * a(m) + mnprob(dataForThisContext(i, q), 1) * (1 - a(m));
+                                emp_prob = emp / (proposedClustersForThisContext(ind).nGenes * a(m) + (1 - a(m)));
+                                logprob(1, ind) = logprob(1, ind) + log(emp_prob);
+                            end
+                        end
+                    if(length(unoccupiedClusters)>=1)
+                        for q = 1:proposedClustersForThisContext(unoccupiedClusters(1)).nFeatures
+                            logprob(1, unoccupiedClusters) = mnprob(dataForThisContext(i, q), 1);  
+                        end                      
+                    end
+                    case 'Gaussian'
+                        for ind1 = 1:length(occupiedClusters)
+                            ind = occupiedClusters(ind1);
+                            %meanCentred = dataForThisContext(i, :) - proposedClustersForThisContext(ind).empiricalMeans;
+                            mu = sum(dataForThisContext(find(proposedClustersForThisContext(ind).logicalGeneIDs), :)) / a(m);
+                            mu = mu / (proposedClustersForThisContext(ind).nGenes / a(m) + 1 / (1 - a(m)));
+                            meanCentred = dataForThisContext(i, :) - mu;
+                            sigma = eye(size(dataForThisContext, 2));
+                            sigmaInverse = sigma .* (proposedClustersForThisContext(ind).nGenes / a(m) + 1 / (1 - a(m)));
+                            logprob(1, ind) = - 0.5 * (meanCentred * sigmaInverse * meanCentred.');
+                        end
+                    logprob(1, unoccupiedClusters) = -0.5 * sum(dataForThisContext(i, :).^2);
+                    end
                 prob = prior(i, :, k)/sum(prior(i, :, k));
-                fprob = cumsum(prob .* exp(logprob - max(logprob)));
-                logweight(1, m) = logweight(1, m) + log(fprob(end)) + max(logprob);
+                % fprob = cumsum(prob .* exp(logprob - max(logprob)));
+                fprob = cumsum(exp(logprob - max(logprob)));
+                pprob = cumsum(prob .* exp(logprob - max(logprob)));
+                logweight(1, m) = logweight(1, m) + log(pprob(end)) + max(logprob);
                 fprob = fprob/fprob(end);
                 u1 = rand;
                 sstar = 1;
@@ -1132,7 +1162,6 @@ for n = 1:nGenes
             end
             m = m + 1;
         end
-        
         s = s(:, :, partstar);
         for ind = 1:numbofparts
             for k = 1:K
@@ -1173,11 +1202,9 @@ end
 ties = find(logweight == max(logweight));
 partstar = ties(randi(length(ties)));
 s = s(:, :, partstar);
-tabulate(s(:,1));
 for k = 1:K
     clusterContainer(k) = proposedClusterContainer(numbofparts * (k - 1) + partstar);
 end
-
 end
 %%----------------------------------------------------------------------
 %% INITIALISE THE MCMC FILE --------------------------------------------
