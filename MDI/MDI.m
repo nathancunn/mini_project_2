@@ -1008,7 +1008,6 @@ global K nGenes N phiIndexMatrix finalIndexMatrix fHandles ...
     gaussianSwitches poissonSwitches nbSwitches massParam nComponents
 allComponents = 1:N;
 % Start with a fixed number of particles allow specification later
-
 prior = zeros(nGenes, N, K);
 for k = 1:K
     if K > 1
@@ -1057,6 +1056,7 @@ s = zeros(nGenes, K, numbofparts);
 logweight = zeros(1, numbofparts);
 partstar = zeros(1, numbofparts);
 aprior = [1 1];
+sumv = zeros(numbofparts, K);
 a = betarnd(aprior(1), aprior(2), numbofparts, 1);
 if(exist('mnprior'))
     clear mnprior;
@@ -1082,20 +1082,28 @@ for n = 1:nGenes
         for k = 1:K;
             dataForThisContext = proposedClusterContainer(numbofparts * (k - 1) + m).data;
             proposedClustersForThisContext = proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct;
+            %sumv(m, k) = sumv(m, k) + samplev_NGG(1, sumv(m, k), n, max(sum([proposedClustersForThisContext.nGenes] > 0), 1), 1, 0.1);
             if(n == 1)
                 sstar = 1;
             else
-                logprob = zeros(1, N);
                 occupiedClusters = unique(s(1:(n - 1), k, m));
                 occupiedClusters = find([proposedClustersForThisContext.nGenes] ~= 0);
                 unoccupiedClusters = setdiff(1:N,occupiedClusters);
+                %if(length(unoccupiedClusters) > 0)
+                %    unoccupiedClusters = unoccupiedClusters(1);
+                %else
+                %    unoccupiedClusters= [];
+                %end
+                % logprob = zeros(1, min(length(occupiedClusters) + 1, N));
+                logprob = zeros(1, N);
                 switch func2str(fHandles{k})
                     case 'Multinomial'
+                        % If a multinomial prior doesn't exist create one using a dirichlet prior
                         if(~exist('mnprior'))
                         numbOfCats = length(proposedClustersForThisContext(1).dataLevels);
                         mnprior = gamrnd(ones(numbOfCats, proposedClustersForThisContext(1).nFeatures, K, numbofparts) / 2, 1);
                         mnprior = mnprior ./ repmat(sum(mnprior), numbOfCats, 1, 1, 1);
-                        end  
+                        end
                         for ind1 = 1:length(occupiedClusters)
                             ind = occupiedClusters(ind1);
                             clustermnprior = mnprior(:, :, k, m);
@@ -1124,12 +1132,25 @@ for n = 1:nGenes
                         end
                     logprob(1, unoccupiedClusters) = -0.5 * sum(dataForThisContext(i, :).^2);
                     end
-                prob = prior(i, :, k)/sum(prior(i, :, k));
-                % fprob = cumsum(prob .* exp(logprob - max(logprob)));
-                fprob = cumsum(exp(logprob - max(logprob)));
+                prob = transpose(gammaMatrix(:, k)/sum(gammaMatrix(:, k)));
+                %{
+                prob = [([proposedClustersForThisContext([proposedClustersForThisContext.nGenes] > 0).nGenes]-0.1)  (1*(1 + sumv(m, k))^0.1)];
+                if(length(prob) > N)
+                    prob = prob(1:N);
+                end
+                if(length(logprob) > N)
+                    logprob = logprob(1:N);
+                end
+                prob = prob / sum(prob);
+                %}
+                %logprob = logprob / sum(logprob);
+                fprob = cumsum(prob .* exp(logprob - max(logprob)));
+                % fprob = cumsum(exp(logprob - max(logprob)));
+                % Use the prob upweighted by 1 + phi for the logweight
+                prob = prior(i, :, k) / sum(prior(i, :, k));
                 pprob = cumsum(prob .* exp(logprob - max(logprob)));
-                logweight(1, m) = logweight(1, m) + log(pprob(end)) + max(logprob);
                 fprob = fprob/fprob(end);
+                logweight(1, m) = logweight(1, m) + log(pprob(end)) + max(logprob);
                 u1 = rand;
                 sstar = 1;
                 while ( fprob(sstar) < u1 )
@@ -1142,10 +1163,13 @@ for n = 1:nGenes
         end
 
     end
-%{
+
     ESS = sum(exp(logweight - max(logweight)))^2 / sum(exp(logweight - max(logweight)).^2);
+    
     partstar = zeros(1, numbofparts); 
-    if ( ESS < 0.5 * numbofparts )
+    partind = [];
+%    if ( ESS < 0.5 * numbofparts )
+     if (ESS >= 0)
         fprob = cumsum(exp(logweight - max(logweight)));
         fprob = fprob / fprob(end);
         
@@ -1161,12 +1185,11 @@ for n = 1:nGenes
             m = m + 1;
         end
         s = s(:, :, partstar);
-        for ind = 1:numbofparts
-            for k = 1:K
-                proposedClusterContainer(numbofparts * (k - 1) + ind) = proposedClusterContainer(numbofparts * (k - 1) + partstar(ind));
-            end
+        for k = 1:K
+            partind = [partind numbofparts*(k - 1) + partstar];
         end
-        logweight = logweight(1, partstar);        
+        proposedClusterContainer = proposedClusterContainer(partind);
+        logweight = logweight(1, partstar);      
     elseif (i == nGenes)
         fprob = cumsum(exp(logweight - max(logweight)));
         fprob = fprob / fprob(end);
@@ -1183,12 +1206,11 @@ for n = 1:nGenes
             m = m + 1;
         end
         logweight = logweight(1, partstar);
-        s = s(:, :, partstar);
-        for ind = 1:numbofparts
-            for k = 1:K
-                proposedClusterContainer(numbofparts * (k - 1) + ind) = proposedClusterContainer(numbofparts * (k - 1) + partstar(ind));
-            end
-        end              
+        s = s(:, :, partstar);  
+        for k = 1:K
+            partind = [partind numbofparts*(k - 1) + partstar];
+        end
+        proposedClusterContainer = proposedClusterContainer(partind);                 
     end
 %}
 fprintf(repmat('\b',1,numel(prog_bar))); 
@@ -1197,8 +1219,13 @@ if(exist('randIndex'))
     [B, I] = sort(randIndex);
     s = s(I, :, :);
 end
-ties = find(logweight == max(logweight));
-partstar = ties(randi(length(ties)));
+fprob = cumsum(logweight);
+fprob = fprob / fprob(end);
+u1 = rand;
+partstar = 1;
+while ( fprob(partstar) < u1 )
+    partstar = partstar + 1;
+end
 s = s(:, :, partstar);
 for k = 1:K
     clusterContainer(k) = proposedClusterContainer(numbofparts * (k - 1) + partstar);

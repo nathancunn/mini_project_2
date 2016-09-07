@@ -1,0 +1,14 @@
+\begin{thebibliography}{1}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Griffin(2014)]{griffin2014sequential}
+JE~Griffin.
+\newblock Sequential monte carlo methods for mixtures with normalized random
+  measures with independent increments priors.
+\newblock \emph{Statistics and Computing}, pages 1--15, 2014.
+
+\end{thebibliography}

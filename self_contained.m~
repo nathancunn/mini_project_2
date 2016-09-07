@@ -1,10 +1,11 @@
 outputDir = '';
-numberOfComponents = 10;
+numberOfComponents = 5;
 numbofits = 100;
-%fileNames = {'Data/synth_data/testData1.csv', 'Data/synth_data/testData2.csv'};
-%fileNames = {'Data/GaussianTestData1.csv', 'Data/GaussianTestData2.csv'};
-fileNames = {'Data/synth_data/GaussianTestData1.csv', 'Data/synth_data/GaussianTestData2.csv'};
+fileNames = {'Data/datagen/multinom1.csv', 'Data/datagen/multinom2.csv'};
+fileNames = {'Data/GaussianTestData1.csv', 'Data/GaussianTestData2.csv'};
+%fileNames = {'Data/synth_data/GaussianTestData1.csv', 'Data/synth_data/GaussianTestData2.csv'};
 dataTypes = {'Gaussian', 'Gaussian'};
+dataTypes = {'Multinomial', 'Multinomial'};
 hyperSamplingFrequency = 1;
 samplingFrequency = 10;
 uniqueIdentifier = 2;
@@ -305,7 +306,6 @@ for i = 1:nGenes
         fprintf (' %d,', i)
     end
 
-
             
     for m = 1:numbofparts
         for k = 1:K;
@@ -316,14 +316,20 @@ for i = 1:nGenes
                 proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct = proposedClustersForThisContext;
                 sstar = 1;
             else
-                logprob = zeros(1, N);
-                oldLogMarginalLikelihoods         = sum([proposedClustersForThisContext.logMarginalLikelihood]);
+                logprob = zeros(1, numberOfComponents);
+                oldLogMarginalLikelihoods         = [proposedClustersForThisContext.logMarginalLikelihood];
                 for ind = 1:numberOfComponents
-                    prop = AddRemoveItem('addGene', proposedClustersForThisContext, ind, i, dataForThisContext, 1);
+                    % prop = AddRemoveItem('addGene', proposedClustersForThisContext, ind, i, dataForThisContext, 1);
+                    %if (proposedClustersForThisContext(ind).nGenes > 1)
+                    %    logprob(1, ind) = mvnpdf(dataForThisContext(i, :), proposedClustersForThisContext(ind).empiricalMeans, cov(dataForThisContext(find(proposedClustersForThisContext(ind).logicalGeneIDs == 1), :)));
+                    %else
+                        logprob(1, ind) = mvnpdf(dataForThisContext(i, :), proposedClustersForThisContext(ind).empiricalMeans);
+                    %end
                     %proposedClustersForThisContext = AddRemoveItem('addGene', proposedClustersForThisContext, ind, i, dataForThisContext, 1);
-                    newLogMarginalLikelihoods         = [prop.logMarginalLikelihood];
+                    % newLogMarginalLikelihoods         = [prop.logMarginalLikelihood];
                     %marginalLikelihoodRatio           = newLogMarginalLikelihoods - oldLogMarginalLikelihoods;
-                    logprob(1, ind) = sum(newLogMarginalLikelihoods) - oldLogMarginalLikelihoods;
+                    %logprob(1, ind) = sum(newLogMarginalLikelihoods) - oldLogMarginalLikelihoods;
+                    % logprob(1, ind) = newLogMarginalLikelihoods(ind); % - oldLogMarginalLikelihoods(ind);
                 end
                 %newLogMarginalLikelihoods         = [proposedClustersForThisContext.logMarginalLikelihood];
                 % marginalLikelihoodRatio           = newLogMarginalLikelihoods - oldLogMarginalLikelihoods;
@@ -340,7 +346,7 @@ for i = 1:nGenes
                 while ( fprob(sstar) < u1 )
                     sstar = sstar + 1;
                 end
-                logweight(k, m) = logweight(k, m) + log(fprob(end)) + max(logprob);
+                logweight(m) = logweight(m) + log(fprob(end)) + max(logprob);
                 proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct = AddRemoveItem('addGene', proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct, sstar, i, dataForThisContext, 1);
                 
             end
@@ -348,12 +354,62 @@ for i = 1:nGenes
             
         end
     end
+    
+    ESS = sum(exp(logweight - max(logweight)))^2 / sum(exp(logweight - max(logweight)).^2);
+
+    partstar = zeros(1, numbofparts); 
+    if ( ESS < 0.5 * numbofparts )
+        fprob = cumsum(exp(logweight - max(logweight)))
+        fprob = fprob / fprob(end);
+        
+        u1 = rand / numbofparts;
+        m = 1;
+        iter = 1;
+        while (m <= numbofparts )
+            while ( (u1 < fprob(m)) && (m <= numbofparts) )
+                partstar(iter) = m;
+                u1 = u1 + 1 / numbofparts;
+                iter = iter + 1;
+            end
+            m = m + 1;
+        end
+        s = s(:, :, partstar);
+        for ind = 1:numbofparts
+            for k = 1:K
+                proposedClusterContainer(numbofparts * (k - 1) + ind) = proposedClusterContainer(numbofparts * (k - 1) + partstar(ind));
+            end
+        end
+        logweight = logweight(1, partstar);        
+    elseif (i == nGenes)
+        fprob = cumsum(exp(logweight - max(logweight)));
+        fprob = fprob / fprob(end);
+        
+        u1 = rand / numbofparts;
+        m = 1;
+        iter = 1;
+        while ( m <= numbofparts )
+            while ( (u1 < fprob(m)) && (m <= numbofparts) )
+                partstar(iter) = m;
+                u1 = u1 + 1 / numbofparts;
+                iter = iter + 1;
+            end
+            m = m + 1;
+        end
+        logweight = logweight(1, partstar);
+        s = s(:, :, partstar);
+        for ind = 1:numbofparts
+            for k = 1:K
+                proposedClusterContainer(numbofparts * (k - 1) + ind) = proposedClusterContainer(numbofparts * (k - 1) + partstar(ind));
+            end
+        end              
+    end
 end
 
 
 ties = find(sum(logweight) == max(sum(logweight)));
 partstar = ties(randi(length(ties)));
 s = s(:, :, partstar)
+tabulate(s(:, 1))
 for k = 1:K
     clusterContainer(k) = proposedClusterContainer(numbofparts * (k - 1) + partstar)
 end

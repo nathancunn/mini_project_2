@@ -9,6 +9,8 @@
 \usepackage{fullpage}
 \usepackage{graphicx}
 \usepackage[numbers]{natbib}
+\usepackage{tikz}
+\usetikzlibrary{shapes,arrows}
 \usepackage[utf8]{inputenc}
 \author{Nathan Cunningham}
 \title{Application of sequential Monte Carlo methods for the clustering of multiple datasets}
@@ -16,9 +18,8 @@
 
 \maketitle
 
-\begin{abstract}
-In this paper I 
-\end{abstract}
+\section*{Abstract}
+
 \section{Introduction}
 
 Bit on cluster analysis, bit on multiple datasets, applications of this to e.g. gene expression data.
@@ -36,12 +37,91 @@ MDI paper summary \cite{kirk2012bayesian}
 
 SMC paper summary \cite{griffin2014sequential}
 
+
+
+
 Maybe bit on Sarah Wade's paper?
 \cite{wade2015bayesian}
 \section{Methods}
-The algorithm presented here is a combination of the work by \citeauthor{griffin2014sequential} and \citeauthor{kirk2012bayesian}
+The algorithm presented here is a combination of the work by \citeauthor{griffin2014sequential} and \citeauthor{kirk2012bayesian}. The aim of the algorithm is to allocate observations from a number of datasets to clusters, and discover a shared clustering across the data sets.
+
+It is assumed that for each of $K$ datasets we make $Q_k$ observations on each of $n$ genes. Each dataset is assumed to share a common clustering structure. The prior probability of assigning an observation to a cluster $c_{ij}$ is denoted $\pi_j$. The parameter $\phi_{kl}$ models the dependence between the component allocations of observations in dataset  k and l.
+
+$x_{i,k}$ denotes the $i^{th}$ observaiton in dataset $k$.
+$c_{ik}$ denotes the component allocation variable for the $i^{th}$ observation in dataset $k$. The prior pribability of the component allocation variables $[c_{1k}, \dots, c_{nk}]$ are given in the vector $\mathbbm{\pi_{k}}$ which in turn are given a $Dirichlet(\alpha_k)$ prior.
+
+
+The algorithm assumes the data arises as a structure as presented in Figure \ref{tik:alg}
+
+
+
+
+
+
+
+
+\tikzstyle{decision} = [diamond, draw, fill=blue!20, 
+    text width=4.5em, text badly centered, node distance=3cm, inner sep=0pt]
+\tikzstyle{block} = [rectangle, draw, fill=blue!20, 
+    text width=5em, text centered, rounded corners, minimum height=4em]
+\tikzstyle{line} = [draw, -latex']
+\tikzstyle{cloud} = [draw, circle,fill=red!10, node distance=1.5cm,
+    minimum height=2em]
+\begin{figure}[htbp]
+\centering
+    \begin{tikzpicture}[node distance = 2cm, auto]
+    % Place nodes
+    \node [cloud] (alpha1) {$\alpha_1$};
+    \node [cloud, right of = alpha1] (alpha2) {$\alpha_2$};
+    \node [cloud, right of = alpha2] (alpha3) {$\alpha_3$};
+    \node [cloud, below of = alpha1] (pi1) {$\pi_1$};
+    \node [cloud, below of = alpha2] (pi2) {$\pi_2$};
+    \node [cloud, below of = alpha3] (pi3) {$\pi_3$};
+    \node [cloud, left of = pi1, xshift = -5mm] (g3) {$G_3^{(0)}$};    
+    \node [cloud, left of = g3] (g2) {$G_2^{(0)}$};    
+    \node [cloud, left of = g2] (g1) {$G_1^{(0)}$};    
+    \node [cloud, below of = g1] (theta1) {$\theta_{c1}$};
+    \node [cloud, below of = g2] (theta2) {$\theta_{c2}$};
+    \node [cloud, below of = g3] (theta3) {$\theta_{c3}$};
+    \node [cloud, below of = pi1] (c1) {$c_{i1}$};
+    \node [cloud, below of = pi2, yshift = -10mm] (c2) {$c_{i2}$};
+    \node [cloud, below of = pi3] (c3) {$c_{i3}$};
+    \node [cloud, below of = c1, yshift = -10mm] (x1) {$x_{i1}$};
+    \node [cloud, below of = c2] (x2) {$x_{i2}$};
+    \node [cloud, below of = c3, yshift = -10mm] (x3) {$x_{i3}$};
+    \node [cloud, right of = pi3, xshift = 5mm, yshift = -5mm] (phi1) {$\phi_{13}$};
+    \node [cloud, right of = c3, xshift = 5mm, yshift = -5mm] (phi2) {$\phi_{23}$};
+    \node [cloud, right of = x3, xshift = 5mm, yshift = 5mm] (phi3) {$\phi_{12}$};
+    \draw [->] (alpha1) -- (pi1);
+    \draw [->] (alpha2) -- (pi2);
+    \draw [->] (alpha3) -- (pi3);
+    \draw [->] (g1) -- (theta1);
+    \draw [->] (g2) -- (theta2);
+    \draw [->] (g3) -- (theta3);
+    \draw [->] (theta1) -- (x1);
+    \draw [->] (theta2) -- (x2);
+    \draw [->] (theta3) -- (x3);
+    \draw [->] (c1) -- (x1);
+    \draw [->] (c2) -- (x2);
+    \draw [->] (c3) -- (x3);
+    \draw [->] (c1) -- (c2);
+    \draw [->] (c2) -- (c3);
+    \draw [->] (c1) -- (c3);
+    \draw [->] (pi1) -- (c1);
+    \draw [->] (pi2) -- (c2);
+    \draw [->] (pi3) -- (c3);
+    \draw [->] (phi1) -- (c3);
+    \draw [->] (phi2) -- (c3);
+    \draw [->] (phi3) -- (c2);    
+    \text Test
+\end{tikzpicture}
+\caption{Graphical representation of the model}
+\label{tik:alg}
+\end{figure}  
+
+
+
 \begin{algorithm}
-\caption{Gibbs sampler}
  \begin{algorithmic}[1]
   \State Initialise $\Gamma$ matrix of prior allocation weights and $\Phi$ matrix of dataset concordance values
   \For{i = 1, \dots, number of iterations}
@@ -49,19 +129,20 @@ The algorithm presented here is a combination of the work by \citeauthor{griffin
   \State Conditional on $c_{i}$ update $\Gamma_i$ and $\Phi_i$
   \EndFor
 \end{algorithmic}
+\caption{Gibbs sampler}
+\label{alg:gibbs}
 \end{algorithm}
 
 
 \begin{algorithm}
-\caption{Particle filter to update cluster allocations}
-\label{alg:pf}
+
  \begin{algorithmic}[1]
   \For{i = 1, \dots, n} \Comment{Loop over observations}
   \For{m = 1, \dots, M} \Comment{Loop over particles}
   \For{j = 1, \dots, d} \Comment{Loop over datasets}
   \State Sample $c^{(m)}_{i, j}$ \Comment{Propose a cluster for each datum}
-  \State $q(c^{(m)}_{i,j} = k) \propto k^*(y_{i,j}|c_{i,j}^{(m)} = k) \gamma_{i, k, j}$ 
-  \State $\xi^{(m)} =  \xi^{(m)} \times \gamma_{i, k, j}(1+\phi_{i})k^*(y_{i,k}|c_{i,j}^{(m)} = k)$ 
+  \State $q(c^{(m)}_{i,j} = k) \propto k^*(y_{i,j}|c_{i,j}^{(m)} = k) \times \gamma_{i, k, j}$ 
+  \State $\xi^{(m)} =  \xi^{(m)} \times \gamma_{i, k, j} \times (1+\phi_{i}) \times k^*(y_{i,k}|c_{i,j}^{(m)} = k)$ 
   \EndFor
   \EndFor
   \State Resample particles according to $\xi^{(m)}$
@@ -69,6 +150,8 @@ The algorithm presented here is a combination of the work by \citeauthor{griffin
   \State Update cluster labels using allocation in particle with largest $\xi^{(m)}$
 
 \end{algorithmic}
+\caption{Particle filter to update cluster allocations}
+\label{alg:pf}
 \end{algorithm}
 
 Where
@@ -84,6 +167,9 @@ k^*(y_{i, k}|c_{i, k}^{(m)} = k) = (\mathbf{y_{i, k}} - \mathbf{\mu_k}) \mathbf{
 \label{eq:gamma}
 \gamma_{i, k, j} \text{ is a prior weight for assigning observation i, in dataset k to cluster j}
 \end{equation}
+
+
+The sequential nature of particle filter methods mean that clustering allocations are only based on all prior observations. This would suggest that the quality of clustering improves for later observations as they are based on more data. In typical applications, the observations would be time-indexed and, as such, the order of observations is important. This is not the case here, however, and between runs of the particle filter the observations are shuffled.
 \section{Example application}
 Comparison of this versus independent clustering of the datasets
 

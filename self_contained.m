@@ -2,7 +2,7 @@ outputDir = '';
 numberOfComponents = 5;
 numbofits = 100;
 fileNames = {'Data/datagen/multinom1.csv', 'Data/datagen/multinom2.csv'};
-%fileNames = {'Data/GaussianTestData1.csv', 'Data/GaussianTestData2.csv'};
+fileNames = {'Data/GaussianTestData1.csv', 'Data/GaussianTestData2.csv'};
 %fileNames = {'Data/synth_data/GaussianTestData1.csv', 'Data/synth_data/GaussianTestData2.csv'};
 dataTypes = {'Gaussian', 'Gaussian'};
 dataTypes = {'Multinomial', 'Multinomial'};
@@ -289,7 +289,7 @@ numbofparts = 10;
 proposedClusterContainer = repelem(clusterContainer, numbofparts);
 
 s = zeros(nGenes, K, numbofparts);
-logweight = zeros(K, numbofparts);
+logweight = zeros(1, numbofparts);
 
 prior = transpose(gammaMatrix);
 
@@ -346,13 +346,62 @@ for i = 1:nGenes
                 while ( fprob(sstar) < u1 )
                     sstar = sstar + 1;
                 end
-                logweight(k, m) = logweight(k, m) + log(fprob(end)) + max(logprob);
+                logweight(m) = logweight(m) + log(fprob(end)) + max(logprob);
                 proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct = AddRemoveItem('addGene', proposedClusterContainer(numbofparts * (k - 1) + m).clusterStruct, sstar, i, dataForThisContext, 1);
                 
             end
             s(i, k, m) = sstar;
             
         end
+    end
+    
+    ESS = sum(exp(logweight - max(logweight)))^2 / sum(exp(logweight - max(logweight)).^2);
+
+    partstar = zeros(1, numbofparts); 
+    if ( ESS < 0.5 * numbofparts )
+        fprob = cumsum(exp(logweight - max(logweight)))
+        fprob = fprob / fprob(end);
+        
+        u1 = rand / numbofparts;
+        m = 1;
+        iter = 1;
+        while (m <= numbofparts )
+            while ( (u1 < fprob(m)) && (m <= numbofparts) )
+                partstar(iter) = m;
+                u1 = u1 + 1 / numbofparts;
+                iter = iter + 1;
+            end
+            m = m + 1;
+        end
+        s = s(:, :, partstar);
+        for ind = 1:numbofparts
+            for k = 1:K
+                proposedClusterContainer(numbofparts * (k - 1) + ind) = proposedClusterContainer(numbofparts * (k - 1) + partstar(ind));
+            end
+        end
+        logweight = logweight(1, partstar);        
+    elseif (i == nGenes)
+        fprob = cumsum(exp(logweight - max(logweight)));
+        fprob = fprob / fprob(end);
+        
+        u1 = rand / numbofparts;
+        m = 1;
+        iter = 1;
+        while ( m <= numbofparts )
+            while ( (u1 < fprob(m)) && (m <= numbofparts) )
+                partstar(iter) = m;
+                u1 = u1 + 1 / numbofparts;
+                iter = iter + 1;
+            end
+            m = m + 1;
+        end
+        logweight = logweight(1, partstar);
+        s = s(:, :, partstar);
+        for ind = 1:numbofparts
+            for k = 1:K
+                proposedClusterContainer(numbofparts * (k - 1) + ind) = proposedClusterContainer(numbofparts * (k - 1) + partstar(ind));
+            end
+        end              
     end
 end
 
