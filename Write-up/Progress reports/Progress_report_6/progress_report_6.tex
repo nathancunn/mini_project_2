@@ -19,7 +19,10 @@
 
 \section{What have I done?}
 \begin{itemize}
-\item Implemented the multinomial resampling step, done for each gene. This hasn't corrected the sensitivity of the algorithm to the order in which the data are presented. The \citeauthor{griffin2014sequential} \cite{griffin2014sequential} paper mentions randomly permuting the data also, ``the data were randomly permuted and the SMC algorithms was run with 5000 particles.''
+\item Implemented the multinomial resampling step, carried out after each 'per-gene' iteration. This doesn't appear to have corrected the sensitivity of the algorithm to the ordering of the data. The \citeauthor{griffin2014sequential} \cite{griffin2014sequential} paper mentions randomly permuting the data also, ``the data were randomly permuted and the SMC algorithms was run with 5000 particles''.
+\item The particle Gibbs steps is a work in progress still. The approach I'm taking is to hold one of the particles as fixed, then resample the allocation holding this reference trajectory fixed.
+\item I examined the output from the original MDI on the same data as I'd tested the SMC algorithm  on. The output appears to converge quickly to complete fusion across clusters. Figures presented below.
+ \item The weight updates, $\xi$, have not been changed, as I think they are being updated correctly in the code, but I might have written the math inaccurately. Algorithm updated below.
 \end{itemize}
 
 
@@ -46,13 +49,14 @@
   \For{m = 1, \dots, M} \Comment{Loop over particles}
   \For{j = 1, \dots, d} \Comment{Loop over datasets}
   \State Sample $c^{(m)}_{i, j}$ \Comment{Propose a cluster for each datum}
-  \State $q(c^{(m)}_{i,j} = k) \propto k^*(y_{i,j}|c_{i,j}^{(m)} = k) \gamma_{i, k, j}$ 
-  \State $\xi^{(m)} =  \xi^{(m)} \times \gamma_{i, k, j}(1+\phi_{i})k^*(y_{i,k}|c_{i,j}^{(m)} = k)$ 
+  \State $q(c^{(m)}_{i,j} = k) \propto k^*(y_{i,j}|c_{i,j}^{(m)} = k) \times \gamma_{i, k, j}$ 
+
   \EndFor
+    \State $\xi^{(m)} = \xi^{(m)} \times {\displaystyle\prod_{k = 1}^{d - 1}}{\displaystyle\prod_{l = k + 1}^{d}} (1+\phi_{kl} \mathbbm{1}(c_{ik} = c_{il}) {\displaystyle\prod_{j = 1}^{d}} \gamma_{i, k, j} k^*(y_{i,k}|c_{i,j}^{(m)} = k)$
   \EndFor
   \State Resample particles according to $\xi^{(m)}$
   \EndFor
-  \State Update cluster labels using allocation in particle with largest $\xi^{(m)}$
+  \State Select single cluster label allocation according to $\xi^{(m)}$
 
 \end{algorithmic}
 \end{algorithm}
@@ -72,41 +76,23 @@ k^*(y_{i, k}|c_{i, k}^{(m)} = k) = (\mathbf{y_{i, k}} - \mathbf{\mu_k}) \mathbf{
 \end{equation}
 
 
-\section{Algorithmic issues}
-\begin{itemize}
-\item Particle resampling step is currently disabled as it can crash the algorithm---possibly related to \texttt{NA} logweights being assigned.
-\item Not currently taking advantage of parallel computing which means the algorithm is slower than it could be. It scales linearly with the number of particles.
-\item As the MDI algorithm originally was not set up for multiple particles, a single particle is selected at the end of the particle filter (based on $\xi^{(m)}$) and that is fed into the next step of the Gibbs sampler. A possible solution would be to treat the particles as separate datasets, so all the particles are returned and the $\Gamma$ and $\Phi$ values are updated based on all of the particles.
-\end{itemize}
-
-
-\section{Multinomial data}
-Extended the algorithm to work on multinomial data.
-
-For each gene an observation is made on each of $Q$ features, each of which take a value $r$ from the set $\{1, \dots, R\}$. Denote the cluster-specific probability of getting value $r$ for feature $q$ by $\theta_{rq}^{(m)}$, such that $\Sigma_{r = 1}^{R} \theta_{rq}^{(m)} = 1$ for each particle, m. Adopt a $Dirichlet\{\beta_{1q}^{(m)}, \dots, \beta_{Rq}^{(m)}\}$ prior for $\theta_{1q}^{(m)}, \dots, \theta_{Rq}^{(m)}$. The Dirichlet prior hyperparameter, $\beta_{rq}^{(m)}$ is taken as $0.5$. Denote the resulting prior probabilities as $b_{rq}^{(m)}$
-
-Assuming independence between features, the probability of assigning the $i^{th}$ observation to a cluster, j, in particle m is calculated as:
-
-\begin{equation}
-p(c_{i}^{(m)} = j| x_{1:i}^{(m)}, c_{1:(n - 1)}^{(m)},b_{1q}^{(m)}, \dots, b_{Rq}^{(m)}, a^{(m)} ) = 
-\prod_{q = 1}^{Q} 
-\frac{(n_{j, x_i}^{(m)} \times a^{(m)}) + (b_{rq}^{(m)} \times (1 - a^{(m)}))}
-{(n_{j, \cdot}^{(m)} \times a^{(m)}) + (1 \times (1 - a^{(m)}))}
-\end{equation}
-
-Where $n_{j, x_i}^{(m)}$ is the number of observations in cluster $j$ with the same value as $x_i^{(m)}$,  $n_{j, \cdot}^{(m)}$ is the total number of observations in cluster $j$ and $a^{(m)}$ is a particle-specific centring measure. This is a weighted average of the empirical probability  of the value of $x_{i}$ in the cluster j, and the prior probability.
-
-Output of the algorithm clustering multinomial and gaussian data is presented in Figures \ref{fig:multinom1} and \ref{fig:multinom2}.
-
-
-\section{Markov chain diagnostics}
-Convergence of the markov chain can be examined by viewing plots of the allocation agreement. Figure \ref{fig:agreement} shows the pairwise agreement of genes in clusters (``fusion''). Although these are relatively stable there appears to be some evidence of an upward trend, so it may be that the algorithm has not yet converged. The algorithm was run for $1000$ iterations.
-
-Figure \ref{fig:agreement_hist} shows the distribution of pairwise allocation agreements. The x axis indicates the number of fused genes across the two datasets, while the height represents the frequency this occurs in the Markov chain. The number of genes fused appears to be uniformly distributed, when it should be hoped that in most cases a large number of genes are fused.
-
-
-
-
+\begin{landscape}
+\begin{figure}[htbp]
+\label{fig:multinom1}
+\includegraphics[width = 0.95\linewidth]{plots/mdi_orig_consensus.pdf}
+\caption{Running the original MDI using four datasets: two gaussian and two multinomial, with a shared clustering order.}
+\end{figure}
+\begin{figure}[htbp]
+\label{fig:multinom1}
+\includegraphics[width = 0.95\linewidth]{plots/mdi_orig_agreement.pdf}
+\caption{Allocation agreement the original MDI using four datasets: two gaussian and two multinomial, with a shared clustering order. Genes are allocated to the same clusters across datasets.}
+\end{figure}
+\begin{figure}[htbp]
+\label{fig:multinom1}
+\includegraphics[width = 0.95\linewidth]{plots/mdi_orig_hist.pdf}
+\caption{Allocation agreement the original MDI using four datasets: two gaussian and two multinomial, with a shared clustering order. Genes are allocated to the same clusters across datasets.}
+\end{figure}
+\end{landscape}
 
 \bibliographystyle{plainnat}
 \bibliography{bibliography.bib}

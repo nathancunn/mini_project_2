@@ -1,6 +1,6 @@
-uniqueIdentifier = 111;
+uniqueIdentifier = 1111;
 nComponents = 4;
-nSamples    = 10000;
+nSamples    = 500;
 hyperSamplingFrequency = 1;
 samplingFrequency = 1;
 initialise = true;
@@ -9,30 +9,52 @@ fileName1   = 'Data/datagen/gaussian1.csv';
 fileName2   = 'Data/datagen/gaussian2.csv';
 fileName3   = 'Data/datagen/multinom1.csv';
 fileName4   = 'Data/datagen/multinom2.csv';
+fileName1 = 'Data/synth_data/testData1.csv'
+fileName2 = 'Data/synth_data/testData2.csv'
 dataType1   = 'Gaussian';
 dataType2   = 'Gaussian';
 dataType3   = 'Multinomial';
 dataType4   = 'Multinomial';
-numbofparts = 10;
+numbofparts = 1000;
 MDI('test_results/', nComponents, nSamples, {fileName1, fileName2,fileName3, fileName4},...
     {dataType1, dataType2, dataType3, dataType4},...
     hyperSamplingFrequency,...
     samplingFrequency, uniqueIdentifier, initialise, numbofparts);
 
-
-MDI('test_results/', nComponents, nSamples, {fileName1, fileName2,fileName3, fileName4},...
-    {dataType1, dataType2, dataType3, dataType4},...
+MDI('test_results/', nComponents, nSamples, {fileName1},...
+    {dataType1},...
     hyperSamplingFrequency,...
-    samplingFrequency, uniqueIdentifier, initialise);
+    samplingFrequency, uniqueIdentifier, initialise, numbofparts);
 
 
 fileName1   = 'Data/synth_data/testData1.csv';
-fileName2   = 'Data/synth_data/testData2.csv';
+fileName2   = 'Data/GaussianTestData2.csv';
 dataType1   = 'Gaussian';
 dataType2   = 'Gaussian';
+
+fileName1 = 'Data/synth_data/testData1.csv'
 
 
 MDI('test_results/', nComponents, nSamples, {fileName1, fileName2},...
     {dataType1, dataType2},...
     hyperSamplingFrequency,...
     samplingFrequency, uniqueIdentifier, initialise, numbofparts);
+
+
+
+fileName1 = 'Data/datagen/gaussian_1_feature.csv'
+fileName2 = 'Data/datagen/gaussian2.csv'
+
+numbofparts = 20;
+uniqueIdentifier = 1111;
+MDI('test_results/', nComponents, nSamples, {fileName1},...
+    {dataType1},...
+    hyperSamplingFrequency,...
+    samplingFrequency, uniqueIdentifier, initialise, numbofparts);
+uniqueIdentifier = 2222;
+MDI('test_results/', nComponents, nSamples, {fileName1, fileName2},...
+    {dataType1, dataType2},...
+    hyperSamplingFrequency,...
+    samplingFrequency, uniqueIdentifier, initialise, numbofparts);
+
+

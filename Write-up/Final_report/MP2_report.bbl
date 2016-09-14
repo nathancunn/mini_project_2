@@ -1,26 +1,111 @@
-\begin{thebibliography}{3}
+\begin{thebibliography}{16}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
 
+\bibitem[Ahmad and Dey(2007)]{ahmad2007k}
+Amir Ahmad and Lipika Dey.
+\newblock A k-mean clustering algorithm for mixed numeric and categorical data.
+\newblock \emph{Data \& Knowledge Engineering}, 63\penalty0 (2):\penalty0
+  503--527, 2007.
+
+\bibitem[Andrieu et~al.(2010)Andrieu, Doucet, and
+  Holenstein]{andrieu2010particle}
+Christophe Andrieu, Arnaud Doucet, and Roman Holenstein.
+\newblock Particle {M}arkov chain {M}onte {C}arlo methods.
+\newblock \emph{Journal of the Royal Statistical Society: Series B (Statistical
+  Methodology)}, 72\penalty0 (3):\penalty0 269--342, 2010.
+
+\bibitem[Binder(1978)]{binder1978bayesian}
+David~A Binder.
+\newblock Bayesian cluster analysis.
+\newblock \emph{Biometrika}, 65\penalty0 (1):\penalty0 31--38, 1978.
+
+\bibitem[Escobar and West(1995)]{escobar1995bayesian}
+Michael~D Escobar and Mike West.
+\newblock Bayesian density estimation and inference using mixtures.
+\newblock \emph{Journal of the {A}merican {S}tatistical association},
+  90\penalty0 (430):\penalty0 577--588, 1995.
+
+\bibitem[Fraley and Raftery(2002)]{fraley2002model}
+Chris Fraley and Adrian~E Raftery.
+\newblock Model-based clustering, discriminant analysis, and density
+  estimation.
+\newblock \emph{Journal of the American Statistical Association}, 97\penalty0
+  (458):\penalty0 611--631, 2002.
+
+\bibitem[Fritsch et~al.(2009)Fritsch, Ickstadt, et~al.]{fritsch2009improved}
+Arno Fritsch, Katja Ickstadt, et~al.
+\newblock Improved criteria for clustering based on the posterior similarity
+  matrix.
+\newblock \emph{Bayesian analysis}, 4\penalty0 (2):\penalty0 367--391, 2009.
+
 \bibitem[Griffin(2014)]{griffin2014sequential}
 JE~Griffin.
-\newblock Sequential monte carlo methods for mixtures with normalized random
-  measures with independent increments priors.
+\newblock Sequential {M}onte {C}arlo methods for mixtures with normalized
+  random measures with independent increments priors.
 \newblock \emph{Statistics and Computing}, pages 1--15, 2014.
+
+\bibitem[Jain and Dubes(1988)]{jain1988algorithms}
+Anil~K Jain and Richard~C Dubes.
+\newblock \emph{Algorithms for clustering data}.
+\newblock Prentice-Hall, Inc., 1988.
 
 \bibitem[Kirk et~al.(2012)Kirk, Griffin, Savage, Ghahramani, and
   Wild]{kirk2012bayesian}
 Paul Kirk, Jim~E Griffin, Richard~S Savage, Zoubin Ghahramani, and David~L
   Wild.
-\newblock Bayesian correlated clustering to integrate multiple datasets.
+\newblock {B}ayesian correlated clustering to integrate multiple datasets.
 \newblock \emph{Bioinformatics}, 28\penalty0 (24):\penalty0 3290--3297, 2012.
+
+\bibitem[Mason(2014)]{mdipp}
+Sam Mason.
+\newblock Mdi++ {B}ayesian data integration of biological data.
+\newblock \url{https://github.com/smason/mdipp}, 2014.
+
+\bibitem[Mason et~al.(2016)Mason, Sayyid, Kirk, Starr, and Wild]{mason2016mdi}
+Samuel~A Mason, Faiz Sayyid, Paul~DW Kirk, Colin Starr, and David~L Wild.
+\newblock Mdi-gpu: accelerating integrative modelling for genomic-scale data
+  using gp-gpu computing.
+\newblock \emph{Statistical applications in genetics and molecular biology},
+  15\penalty0 (1):\penalty0 83--86, 2016.
+
+\bibitem[McParland et~al.(2014)McParland, Gormley, McCormick, Clark, Kabudula,
+  and Collinson]{mcparland2014clustering}
+Damien McParland, Isobel~Claire Gormley, Tyler~H McCormick, Samuel~J Clark,
+  Chodziwadziwa~Whiteson Kabudula, and Mark~A Collinson.
+\newblock Clustering {S}outh {A}frican households based on their asset status
+  using latent variable models.
+\newblock \emph{The Annals of Applied Statistics}, 8\penalty0 (2):\penalty0
+  747, 2014.
+
+\bibitem[McParland et~al.(2016)McParland, Phillips, Brennan, Roche, and
+  Gormley]{mcparland2016clustering}
+Damien McParland, Catherine~M Phillips, Lorraine Brennan, Helen~M Roche, and
+  Isobel~Claire Gormley.
+\newblock Clustering high dimensional mixed data to uncover sub-phenotypes:
+  joint analysis of phenotypic and genotypic data.
+\newblock \emph{arXiv preprint arXiv:1606.05107}, 2016.
+
+\bibitem[Pena et~al.(1999)Pena, Lozano, and Larranaga]{pena1999empirical}
+Jos{\'e}~Manuel Pena, Jose~Antonio Lozano, and Pedro Larranaga.
+\newblock An empirical comparison of four initialization methods for the
+  k-means algorithm.
+\newblock \emph{Pattern recognition letters}, 20\penalty0 (10):\penalty0
+  1027--1040, 1999.
+
+\bibitem[Savage et~al.(2010)Savage, Ghahramani, Griffin, Bernard, and
+  Wild]{savage2010discovering}
+Richard~S Savage, Zoubin Ghahramani, Jim~E Griffin, J~Bernard, and David~L
+  Wild.
+\newblock Discovering transcriptional modules by {B}ayesian data integration.
+\newblock \emph{Bioinformatics}, 26\penalty0 (12):\penalty0 i158--i167, 2010.
 
 \bibitem[Wade and Ghahramani(2015)]{wade2015bayesian}
 Sara Wade and Zoubin Ghahramani.
-\newblock Bayesian cluster analysis: Point estimation and credible balls.
+\newblock {B}ayesian cluster analysis: Point estimation and credible balls.
 \newblock \emph{arXiv preprint arXiv:1505.03339}, 2015.
 
 \end{thebibliography}
