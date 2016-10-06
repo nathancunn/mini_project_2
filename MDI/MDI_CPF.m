@@ -42,7 +42,7 @@ for i = 2:nGenes
             indx(part) = indx(part) + 1;
         end
     end
-    indx(numbofparts = numbofparts;
+    indx(numbofparts) = numbofparts;
     s(1:(i - 1), :, :) = s(1:(i - 1), :, indx);
     nj = nj(:, :, indx);
     sumy = sumy(:, :, indx);
