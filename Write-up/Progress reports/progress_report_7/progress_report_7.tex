@@ -9,6 +9,6 @@
 \item Ran MDI algorithm using different Gaussian datasets simulated to have the same group structure as the multinomial datasets used in the report.
 \item Suffered the same issues: poor agreement in allocation as compared with the multinomial datasets. The phi values between the datasets were highest for agreement between the multinomial datasets.
 \item Suggests the problem is algorithmic as opposed to a quirk in the data.
-\item The algorithm appears to take considerably longer when running with multinomial data: For 10 particles, clustering 2 multinomials and 2 Gaussians, a single iteration takes approx. 300 seconds. Running similarly on 4 Gaussian datasets takes approx. 80 seconds.
+\item The algorithm appears to take considerably longer when running with multinomial data: For 10 particles, clustering 2 multinomials and 2 Gaussians, a single iteration takes approx. 300 seconds. Running similarly on 4 Gaussian datasets takes approx. 80 seconds. Calculating the likelihood of a multinomial should be much less computationally intensive as it's simply tabulating valuescell(
 \end{itemize}
 \end{document}
