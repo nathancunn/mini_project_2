@@ -369,7 +369,10 @@ for it = 1:numbofits
     %%----------------------------------------------------------------------
     vStar                      = DrawNewVStar(normalizingConstant);
     massParam                  = DrawNewMassParameter(massParam, gammaMatrix);
+    % profile on
     [clusterContainer s]       = DrawNewItemLabel(gammaMatrix, phiVector, s, clusterContainer, numbofparts);
+    % profsave
+    % profile off
     [phiVector  productMatrix] = DrawNewPhi(phiVector, vStar, s, productMatrix);
     normalizingConstant        = sum(productMatrix);%recalculate the normalizing constant
     %%----------------------------------------------------------------------
@@ -919,81 +922,140 @@ global K N finalIndexMatrix twoPowKminus1 doNotPertainToContexti nUniqueCoeffici
 % Context 1: 1 1 1 2 2 2 3 3
 % Context 2: 2 2 2 1 1 1 3 3
 % then this might swap the 1s and 2s in Context 1
+%{
+sStar = s;
+s_old = s;
+for k = 1:(K - 1)
+    labs = unique(s(:, k));
+    pertinentDatasets = setdiff(k:K, k);
+    clustersForThisContext    = clusterContainer(k).clusterStruct;
+        for i = 1:(length(labs) - 1);
+            for h = (i+1):length(labs)
+                oldOldInds = s(:, k) == labs(i);
+                newOldInds = (s(:, k) == labs(h));
+                oldLabs = s(oldOldInds, pertinentDatasets);
+                newLabs = s(newOldInds, pertinentDatasets);
+                
+                oldAgree = [(oldLabs == labs(i)); (newLabs == labs(h))];
+                newAgree = [(oldLabs == labs(h)); (newLabs == labs(i))];
+
+                if sum(newAgree) > sum(oldAgree)
+                    sStar(oldOldInds, k) = labs(h);
+                    sStar(newOldInds, k) = labs(i);
+                end
+                s = sStar;
+                savedCluster                    = clustersForThisContext(labs(i));
+                clustersForThisContext(labs(i)) = clustersForThisContext(labs(h));
+                clustersForThisContext(labs(h)) = savedCluster;
+                %We also need to swap the appropriate elements of gammaMatrix:
+                savedGamma            = gammaMatrix(labs(i),k);
+                gammaMatrix(labs(i), k)      = gammaMatrix(labs(h), k);
+                gammaMatrix(labs(h), k) = savedGamma;
+                
+            end
+        end
+    clusterContainer(k).clusterStruct = clustersForThisContext;
+
+end
+
+for k = 1:K
+    oldCluster = clusterContainer(k).clusterStruct;
+    clustersForThisContext = clusterContainer(k).clusterStruct;
+    labs = unique(s_old(:, k));
+    for lab = 1:length(labs)
+        oldInds = s_old(:, k) == labs(lab)
+        if(all(s(oldInds, k) ~= s_old(oldInds, k)))
+            savedCluster = clustersForThisContext(
+            clustersForThisContext
+end
+ 
+
+
+%}
+
 for j = 1:K
     clustersForThisContext    = clusterContainer(j).clusterStruct;
     notPertinentInThisContext = doNotPertainToContexti(j,:);
-    for i = 1:N
+    
+    for i = 1:(N - 1)
+        for newpos = (i+1):N
         % Randomly choose any component that is not component i
-        newpos = ceil(rand * (N - 1));
-        if ( newpos >= i )
-            newpos = newpos + 1;
-        end
-        %We propose to swap the labels of components i and newpos
-        originalInds       = s(:,j) == i;
-        originalIndsNewpos = s(:,j) == newpos;
-        %Calculate likelihood before the swap:
-        labels1 = s(originalInds,:); % This returns all rows of s where the jth column contains i.
-        labels2 = s(originalIndsNewpos,:); % This returns all rows of s where the jth column contains newpos.
-        %Determine the phi dependence coefficients that we need:
-        agreeingLabels      = [(labels1 == i); (labels2 == newpos)];
-        binInd              = agreeingLabels*(2.^(size(agreeingLabels,2)-1:-1:0))';  % = bin2dec(num2str(agreeingLabels))
-        phiInds             = finalIndexMatrix(binInd,:);
-        phiMat              = ones(size(agreeingLabels,1),1)*phiVector;
-        logPhiSum           = sum(log(1+phiMat(phiInds)));  %Note that the "1+" converts from phis to rhos
-        swappedLabels1      = labels1;
-        swappedLabels2      = labels2;
-        swappedLabels1(:,j) = newpos;
-        swappedLabels2(:,j) = i;
-        %Determine the phi dependence coefficients that we need:
-        agreeingLabelsSwap = [(swappedLabels1 == newpos); (swappedLabels2 == i)];
-        binInd             = agreeingLabelsSwap*(2.^(size(agreeingLabelsSwap,2)-1:-1:0))';% = bin2dec(num2str(agreeingLabelsSwap));
-        phiIndsSwap        = finalIndexMatrix(binInd,:);
-        phiIndsSwap(:,notPertinentInThisContext) = false;
-        phiMatSwap         = ones(size(agreeingLabelsSwap,1),1)*phiVector;
-        logPhiSumSwap      = sum(log(1+phiMatSwap(phiIndsSwap)));  %Note that the "1+" converts from phis to rhos
-        logaccept          = logPhiSumSwap - logPhiSum;
-        
-        accept = 1;
-        if ( logaccept < 0 )
-            accept = exp(logaccept);
-        end
-        
-        if ( rand < accept )
-            % swap the labels:
-            savedCluster                   = clustersForThisContext(i);
-            clustersForThisContext(i)      = clustersForThisContext(newpos);
-            clustersForThisContext(newpos) = savedCluster;
-            s(originalInds,j)              = newpos;
-            s(originalIndsNewpos,j)        = i;
-            %We also need to swap the appropriate elements of gammaMatrix:
-            savedGamma            = gammaMatrix(i,j);
-            gammaMatrix(i,j)      = gammaMatrix(newpos, j);
-            gammaMatrix(newpos,j) = savedGamma;
-            %This has an impact on columnProductMatrix too, so recalculate.
-            %Might as well do this once, at the end.
-            %%
-            %This, in turn, has an impact on sumsOfColumnProducts, which
-            %then has an impact upon productMatrix... but we'll just
-            %recalculate these at the end too, rather than doing clever
-            %indexing
-            %%
-            %Note that the commented code below is a faster way to update,
-            %but has a tendency to create numerical errors (leading to
-            %NaNs)
-            % %             columnProductMatrix(i, contextInvolvementIndexMatrix(j,:)) ...
-            % %                 = columnProductMatrix(i, contextInvolvementIndexMatrix(j,:))/savedGamma;
-            % %             columnProductMatrix(i, contextInvolvementIndexMatrix(j,:)) ...
-            % %                 = columnProductMatrix(i, contextInvolvementIndexMatrix(j,:))*gammaMatrix(i,j);
-            % %
-            % %             columnProductMatrix(newpos, contextInvolvementIndexMatrix(j,:)) ...
-            % %                 = columnProductMatrix(newpos, contextInvolvementIndexMatrix(j,:))/gammaMatrix(i,j);
-            % %             columnProductMatrix(newpos, contextInvolvementIndexMatrix(j,:)) ...
-            % %                 = columnProductMatrix(newpos, contextInvolvementIndexMatrix(j,:))*gammaMatrix(newpos,j);
+        %newpos = ceil(rand * (N - 1));
+        %if ( newpos >= i )
+        %    newpos = newpos + 1;
+        %end
+            %We propose to swap the labels of components i and newpos
+            originalInds       = s(:,j) == i;
+            originalIndsNewpos = s(:,j) == newpos;
+            %Calculate likelihood before the swap:
+            labels1 = s(originalInds,:); % This returns all rows of s where the jth column contains i.
+            labels2 = s(originalIndsNewpos,:); % This returns all rows of s where the jth column contains newpos.
+            %Determine the phi dependence coefficients that we need:
+            agreeingLabels      = [(labels1 == i); (labels2 == newpos)];
+            binInd              = agreeingLabels*(2.^(size(agreeingLabels,2)-1:-1:0))';  % = bin2dec(num2str(agreeingLabels))
+            phiInds             = finalIndexMatrix(binInd,:);
+            phiMat              = ones(size(agreeingLabels,1),1)*phiVector;
+            logPhiSum           = sum(log(1+phiMat(phiInds)));  %Note that the "1+" converts from phis to rhos
+            swappedLabels1      = labels1;
+            swappedLabels2      = labels2;
+            swappedLabels1(:,j) = newpos;
+            swappedLabels2(:,j) = i;
+            %Determine the phi dependence coefficients that we need:
+            agreeingLabelsSwap = [(swappedLabels1 == newpos); (swappedLabels2 == i)];
+            binInd             = agreeingLabelsSwap*(2.^(size(agreeingLabelsSwap,2)-1:-1:0))';% = bin2dec(num2str(agreeingLabelsSwap));
+            phiIndsSwap        = finalIndexMatrix(binInd,:);
+            phiIndsSwap(:,notPertinentInThisContext) = false;
+            phiMatSwap         = ones(size(agreeingLabelsSwap,1),1)*phiVector;
+            logPhiSumSwap      = sum(log(1+phiMatSwap(phiIndsSwap)));  %Note that the "1+" converts from phis to rhos
+            logaccept          = logPhiSumSwap - logPhiSum;
             
+            accept = 1;
+            if ( logaccept < 0 )
+                accept = exp(logaccept);
+            end
+            
+            if ( rand < accept )
+                % swap the labels:
+                savedCluster                   = clustersForThisContext(i);
+                clustersForThisContext(i)      = clustersForThisContext(newpos);
+                clustersForThisContext(newpos) = savedCluster;
+                s(originalInds,j)              = newpos;
+                s(originalIndsNewpos,j)        = i;
+                %We also need to swap the appropriate elements of gammaMatrix:
+                savedGamma            = gammaMatrix(i,j);
+                gammaMatrix(i,j)      = gammaMatrix(newpos, j);
+                gammaMatrix(newpos,j) = savedGamma;
+                %This has an impact on columnProductMatrix too, so recalculate.
+                %Might as well do this once, at the end.
+                %%
+                %This, in turn, has an impact on sumsOfColumnProducts, which
+                %then has an impact upon productMatrix... but we'll just
+                %recalculate these at the end too, rather than doing clever
+                %indexing
+                %%
+                %Note that the commented code below is a faster way to update,
+                %but has a tendency to create numerical errors (leading to
+                %NaNs)
+                % %             columnProductMatrix(i, contextInvolvementIndexMatrix(j,:)) ...
+                % %                 = columnProductMatrix(i, contextInvolvementIndexMatrix(j,:))/savedGamma;
+                % %             columnProductMatrix(i, contextInvolvementIndexMatrix(j,:)) ...
+                % %                 = columnProductMatrix(i, contextInvolvementIndexMatrix(j,:))*gammaMatrix(i,j);
+                % %
+                % %             columnProductMatrix(newpos, contextInvolvementIndexMatrix(j,:)) ...
+                % %                 = columnProductMatrix(newpos, contextInvolvementIndexMatrix(j,:))/gammaMatrix(i,j);
+                % %             columnProductMatrix(newpos, contextInvolvementIndexMatrix(j,:)) ...
+                % %                 = columnProductMatrix(newpos, contextInvolvementIndexMatrix(j,:))*gammaMatrix(newpos,j);
+                
+            end
         end
     end
+
+    
     clusterContainer(j).clusterStruct = clustersForThisContext;
 end
+
+%}
+
 %%RECOMPUTE VARIOUS BOOK-KEEPING ARRAYS
 [columnProductMatrix productMatrix sumsOfColumnProducts uniquePhiCoeffVector] = ComputeDerivedGammaArrays(gammaMatrix, phiVector);
 
@@ -1007,39 +1069,6 @@ global K nGenes N phiIndexMatrix finalIndexMatrix fHandles ...
     doNotPertainToContexti allLabelsMatrix timeCourseSwitches ...
     gaussianSwitches poissonSwitches nbSwitches massParam nComponents
 allComponents = 1:N;
-% Start with a fixed number of particles allow specification later
-prior = zeros(nGenes, N, K);
-for k = 1:K
-    if K > 1
-        phiIndicesForConditional = union(find(phiIndexMatrix(:,1)== k), find(phiIndexMatrix(:,2)== k));
-    else
-        phiIndicesForConditional = [];
-    end
-    notPertinentInThisContext = doNotPertainToContexti(k,:);
-    for i = 1:nGenes
-        % Calculate the prior and upweight by concordance across datasets
-        prob     = gammaMatrix(:, k);%%conditional prior
-        %%We need to find the labels of gene i in the other contexts:
-        %%We consider all possibilities for the label of gene i
-        %%in context j:
-        labelsAcrossAllContexts            = s(i, :);
-        labelsAcrossAllContextsMatrix      = ones(N,1)*labelsAcrossAllContexts;
-        labelsAcrossAllContextsMatrix(:,k) = 1:N;
-        %%We then need to upweight the probabilities according
-        %%to the labels in the other contexts.
-        labelAgreementMatrix = (allLabelsMatrix == labelsAcrossAllContextsMatrix);
-        myPhiMatrix          = ones(size(labelAgreementMatrix,1),1)*phiVector;
-        binInd               = labelAgreementMatrix*(2.^(size(labelAgreementMatrix,2)-1:-1:0))';  %bin2dec(num2str(labelAgreementMatrix))
-        finalIndexMatrixRows = finalIndexMatrix(binInd,:);
-        finalIndexMatrixRows(:,notPertinentInThisContext) = false;
-        upWeighting          = finalIndexMatrixRows.*myPhiMatrix;
-        upWeighting          = prod(1+ upWeighting(:,phiIndicesForConditional),2);
-        prob                 = prob.*upWeighting;  %%This takes care of multiplying by 1+phi
-        prior(i, :, k) = transpose(prob);
-    end
-end
-
-
 
 % Empyting the clusters from the previous run to allow the particle filter to run
 for k = 1:K
@@ -1052,128 +1081,119 @@ for k = 1:K
 end
 
 % Specify some values for the particle filter
-s = zeros(nGenes, K, numbofparts);
-logweight = zeros(1, numbofparts);
-partstar = zeros(1, numbofparts);
-aprior = [1 1];
-sumv = zeros(numbofparts, K);
+s = zeros(nGenes, K, numbofparts);      % The allocation variable
+logweight = zeros(1, numbofparts);      % The log weight per particle
+partstar = zeros(1, numbofparts);       % For reweighting particles
+sumy = cell(K, numbofparts);            % Running sum of clusters
+nj = cell(K, numbofparts);              % Running count of cluster sizes
+aprior = [1 1];                         % Prior on the centring measure
+sumv = zeros(K, numbofparts);           % Jumping probability (not used?)
+logprob = cell(1,K);                    % Probability of belonging to each cluster
+M = 1;                                  % The mass parameter
 a = betarnd(aprior(1), aprior(2), numbofparts, 1);
+
+
+
+% Time-wise deleting and re-allocating is not good
 if(exist('mnprior'))
     clear mnprior;
 end
 
-if(rand >= 1)
-    randIndex = randperm(nGenes);
+
+% Particle filter
+% Initialise the first observation to cluster 1
+for k = 1:K
+    dataForThisContext = clusterContainer(k).data;
+    for m = 1:numbofparts
+        sumy{k, m}(1, :) = dataForThisContext(1, :);
+        nj{k, m}(1) = 1;
+        logweight(m) = 0;
+        s(1, k, m) = 1;
+    end
 end
 
-% Some information
-sumy = cell(N, numbofparts, K);
-nj = zeros(N, numbofparts, K);
-sumv = zeros(N, numbofparts, K);
-M = 1;
-% Particle filter
-% Only outputs a single particle
-for n = 1:nGenes
-    if(exist('randIndex'))
-        i = randIndex(n);
-    else
-        i = n;
-    end
-    prog = round(n / nGenes * 50);
-    prog_bar = sprintf([ '[' repmat('■', 1, prog) repmat('_', 1, 50 - prog) ']']);
+
+for i = 2:nGenes
+  
+    % Do a progress bar; less meaningful with CPF step
+    prog = round(i / nGenes * 50);
+    prog_bar = sprintf([ '[' repmat('#', 1, prog) repmat('_', 1, 50 - prog) ']']);
     fprintf(prog_bar);
-    for m = 1:numbofparts
-        for k = 1:K;            
+
+    for m = 1:numbofparts  
+        for k = 1:K;
+            % Load the data for this context
             dataForThisContext = clusterContainer(k).data;
-            if(n == 1)
-                sstar = 1;
-                switch func2str(fHandles{k})
-                    case 'Multinomial'
-                        numbOfCats = length(clusterContainer(k).clusterStruct(1).dataLevels);
-                        countsj = zeros(N, clusterContainer(k).clusterStruct(1).nFeatures, numbOfCats,  numbofparts, K);
-                    case 'Gaussian'
-                        % Putting this in as zeros just so the shape is right
-                        sumy{1, m, k} = dataForThisContext(i, :) * 0;
-                end
-                
-            else
-                occupiedClusters = unique(s(1:(n - 1), k, m));
-                unoccupiedClusters = setdiff(1:N,occupiedClusters);
-                logprob = zeros(1, N);
-                switch func2str(fHandles{k})
-                    case 'Multinomial'
-                        % If a multinomial prior doesn't exist create one using a dirichlet prior
-                        if(~exist('mnprior'))
-                            numbOfCats = length(clusterContainer(k).clusterStruct(1).dataLevels);
-                            mnprior = gamrnd(ones(numbOfCats, clusterContainer(k).clusterStruct(1).nFeatures, K, numbofparts) / 2, 1);
-                            mnprior = mnprior ./ repmat(sum(mnprior), numbOfCats, 1, 1, 1);
-                        end
-                        for ind1 = 1:length(occupiedClusters)
-                            ind = occupiedClusters(ind1);
-                            clustermnprior = mnprior(:, :, k, m);
-                            for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
-                                mnprob = clustermnprior(:, q);
-                                emp = countsj(ind, q, dataForThisContext(i, q), m, k) * a(m) + mnprob(dataForThisContext(i, q), 1) * (1 - a(m));
-                                emp_prob = emp / (nj(ind, m, k) * a(m) + (1 - a(m)));
-                                logprob(1, ind) = logprob(1, ind) + log(emp_prob);
-                            end
-                        end
-                        if(length(unoccupiedClusters)>=1)
-                            for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
-                                logprob(1, unoccupiedClusters) = mnprob(dataForThisContext(i, q), 1);
-                            end
-                        end
-                    case 'Gaussian'
-                        for ind1 = 1:length(occupiedClusters)
-                            ind = occupiedClusters(ind1);
-                            mu = sumy{ind, m, k} * a(m);
-                            mu = mu / (nj(ind, m, k) * a(m) + 1 * (1 - a(m)));
-                            meanCentred = dataForThisContext(i, :) - mu;
-                            sigma = eye(size(dataForThisContext, 2));
-                            sigmaInverse = sigma .* (nj(ind, m, k) * a(m) + 1 * (1 - a(m)));
-                            logprob(1, ind) = - 0.5 * (meanCentred * sigmaInverse * meanCentred.');
-                        end
-                        logprob(1, unoccupiedClusters) = -0.5 * sum(dataForThisContext(i, :).^2);
-                end
-                prob = transpose(gammaMatrix(:, k)/sum(gammaMatrix(:, k)));
-                
-                fprob = cumsum(prob .* exp(logprob - max(logprob)));
-                prob = prior(i, :, k) / sum(prior(i, :, k));
-                pprob = cumsum(prob .* exp(logprob - max(logprob)));
-                fprob = fprob/fprob(end);
-                logweight(1, m) = logweight(1, m) + log(pprob(end)) + max(logprob);
-                u1 = rand;
-                sstar = 1;
-                while ( fprob(sstar) < u1 )
-                    sstar = sstar + 1;
-                end
-            end
-            switch func2str(fHandles{k})
-                case 'Multinomial'
-                    for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
-                        countsj(sstar, q, dataForThisContext(i, q), m, k) = countsj(sstar, q, dataForThisContext(i, q), m, k) + 1;
-                    end
-                case 'Gaussian'
-                    if(size(sumy{sstar, m, k}, 1) == 0)
-                        sumy{sstar, m, k} = dataForThisContext(i, :) * 0;
-                    end
-                    sumy{sstar, m, k} = sumy{sstar, m, k} + dataForThisContext(i, :);
-            end
-            nj(sstar, m, k) = nj(sstar, m, k) + 1;
-            s(n, k, m) = sstar;
+            prob = [nj{k, m} M];
+            prob = prob / sum(prob);
+            logprob{1, k} = logProbCalc(dataForThisContext(i, :), clusterContainer, nj{k, m}, sumy{k, m}, a(m), func2str(fHandles{k}));
+
+            % Final probabilities weighted by the prior prob
+            fprob = cumsum(prob .* exp(logprob{1, k} - max(logprob{1, k})));
+            fprob = fprob/fprob(end);
             
+            u1 = rand;
+            sstar = 1;
+            while ( fprob(sstar) < u1 )
+                sstar = sstar + 1;
+            end
+            % Add to the cluster defined by sstar
+            s(i, k, m) = sstar;
         end
+        % Update the logweight and nj and sumy
+        % and calculate particle weight, upweighted for agreement across
+        % datasets
+        % Need to do label swapping
+        
+        
+        
+        for k = 1:K
+            upWeighting = upWeightCalc(k, nj{k, m}, s(i, :, m), phiVector);
+            
+            prob = [nj{k, m} M];
+
+            if(length(prob) > nComponents)
+                prob(end) = [];
+            end
+            prob = prob .* upWeighting';
+            prob = prob / sum(prob);
+            pprob = cumsum(prob .* exp(logprob{1, k} - max(logprob{1, k})));
+            logweight(1, m) = logweight(1, m) +  log(pprob(end)) + max(logprob{1, k});
+            
+            
+            % If we're adding to a new cluster
+            if(s(i, k, m) == length(nj{k, m}) + 1)
+                nj{k, m} = [nj{k, m} 1];
+                switch func2str(fHandles{k})
+                    case 'Multinomial'
+                        for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
+                            countsj(s(i, k, m), q, dataForThisContext(i, q), k, m) = countsj(sstar, q, dataForThisContext(i, q), k, m) + 1;
+                        end
+                    case 'Gaussian'
+                        sumy{k, m}(s(i, k, m), :) = dataForThisContext(i, :);
+                end
+            else
+                % Adding to an old cluster
+                nj{k, m}(s(i, k, m)) = nj{k, m}(s(i, k, m)) + 1;
+                switch func2str(fHandles{k})
+                    case 'Multinomial'
+                        for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
+                            countsj(sstar, q, dataForThisContext(i, q), k, m) = 1;
+                        end
+                    case 'Gaussian'
+                        sumy{k, m}(s(i, k, m), :) = sumy{k, m}(s(i, k, m), :) + dataForThisContext(i, :);
+                end
+            end 
+        end     
     end
     
-    %}
-
+    % Resample the particles based on ESS
     ESS = sum(exp(logweight - max(logweight)))^2 / sum(exp(logweight - max(logweight)).^2);
     partstar = zeros(1, numbofparts);
     partind = [];
     if ( ESS < 0.5 * numbofparts )
         fprob = cumsum(exp(logweight - max(logweight)));
         fprob = fprob / fprob(end);
-        
         u1 = rand / numbofparts;
         m = 1;
         iter = 1;
@@ -1186,100 +1206,73 @@ for n = 1:nGenes
             m = m + 1;
         end
         s = s(:, :, partstar);
-        %logweight = logweight(1, partstar);
-        nj = nj(:, partstar, :);
+        nj = nj(:, partstar);
+        sumv = sumv(:, partstar);
         if(exist('sumy'))
-            sumy = sumy(:, partstar, :);
+            sumy = sumy(:, partstar);
         end
         if(exist('countsj'))
-            countsj =  countsj(:, :, :, partstar, :);
+            countsj =  countsj(:, :, :, :, partstar);
         end
+        % Reset logweights after resampling
         logweight = zeros(1, numbofparts);
-
-
-        for j = 1:(n-1)
-            if(exist('randIndex'))
-                i = randIndex(j);
-            else
-                i = j;
-            end
-
-        for m = 1:numbofparts
+        % Update all previous allocations
+        for j = 1:(i-1)
             for k = 1:K
                 dataForThisContext = clusterContainer(k).data;
 
+                for m = 1:numbofparts
                     % Remove obs from current cluster
-                    nj(s(j, k, m), m, k) = nj(s(j, k, m), m, k) - 1;
-                   
-                    %{
-                    if ( nj{1, it}(s(it, i)) == 0 )
-                        nj{1, it}(s(it, i)) = [];
-                        sumy{1, it}(s(it, i)) = [];
-                        s(it, :) = s(it, :) - (s(it, :) > s(it, i));
+                    nj{k, m}(s(j, k, m)) = nj{k, m}(s(j, k, m)) - 1;
+                    sumy{k, m}(s(j, k, m), :) = sumy{k, m}(s(j, k, m), :) - dataForThisContext(j, :);
+                    if(nj{k, m}(s(j, k, m)) == 0)
+                        nj{k, m}(s(j, k, m)) = [];
+                        sumy{k, m}(s(j, k, m), :) = [];
+                        % If you emptied a cluster then all greater
+                        % labels decrease by 1
+                        s(:, k, m) = s(:, k, m) - (s(:, k, m) > s(j, k, m));                        
                     end
-                    %}
-                    %occupiedClusters = unique(s(1:(j - 1), k, m));
-                    %unoccupiedClusters = setdiff(1:N,occupiedClusters);
-                    switch func2str(fHandles{k})
-                    case 'Multinomial'
-                        % Remove obs from current cluster
-                        for q = 1:clusterContainer(k).clusterStruct(1).nFeatures 
-                            countsj(s(j, k, m), q, dataForThisContext(i, q), m, k);
-                        end
-                        % If a multinomial prior doesn't exist create one using a dirichlet prior
-                        if(~exist('mnprior'))
-                            numbOfCats = length(clusterContainer(k).clusterStruct(1).dataLevels);
-                            mnprior = gamrnd(ones(numbOfCats, clusterContainer(k).clusterStruct(1).nFeatures, K, numbofparts) / 2, 1);
-                            mnprior = mnprior ./ repmat(sum(mnprior), numbOfCats, 1, 1, 1);
-                        end
-                        for ind = 1:N
-                            clustermnprior = mnprior(:, :, k, m);
-                            for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
-                                mnprob = clustermnprior(:, q);
-                                emp = countsj(ind, q, dataForThisContext(i, q), m, k) * a(m) + mnprob(dataForThisContext(i, q), 1) * (1 - a(m));
-                                emp_prob = emp / (nj(ind, m, k) * a(m) + (1 - a(m)));
-                                logprob(1, ind) = logprob(1, ind) + log(emp_prob);
-                            end
-                        end
-                    case 'Gaussian'
-                        % Remove obs from current cluster
-                        sumy{s(j, k, m), m, k} = sumy{s(j, k, m), m, k} - dataForThisContext(i, :);                
-                        for ind = 1:N
-                            if(size(sumy{ind, m, k}, 1) == 0)
-                            sumy{ind, m, k} = dataForThisContext(i, :) * 0;
-                            end
-                            mu = sumy{ind, m, k} * a(m);
-                            mu = mu / (nj(ind, m, k) * a(m) + 1 * (1 - a(m)));
-                            meanCentred = dataForThisContext(i, :) - mu;
-                            sigma = eye(size(dataForThisContext, 2));	
-                            sigmaInverse = sigma .* (nj(ind, m, k) * a(m) + 1 * (1 - a(m)));
-                            logprob(1, ind) = - 0.5 * (meanCentred * sigmaInverse * meanCentred.');
-                        end
+                    prob = [nj{k, m} M] / (sum(nj{k, m}) + M);
+                    % prob = [nj{k, m}-gamma (M * (sumv(k, m) + lambda) ^ gamma)];
+                    if(length(prob) > nComponents)
+                        prob(end) = [];
                     end
-                    prob = transpose(gammaMatrix(:, k)/sum(gammaMatrix(:, k)));
-                    fprob = cumsum(prob .* exp(logprob - max(logprob)));
+                    prob = prob / sum(prob);
+                    
+                    logprob{1, k} = logProbCalc(dataForThisContext(j, :), clusterContainer, nj{k, m}, sumy{k, m}, a(m), func2str(fHandles{k}));
+
+                    fprob = cumsum(prob .* exp(logprob{1, k} - max(logprob{1, k})));
                     fprob = fprob / fprob(end);
-                    prob = prior(i, :, k) / sum(prior(i, :, k));
-                    pprob = cumsum(prob .* exp(logprob - max(logprob)));
+                    %pprob = cumsum(prob .* exp(logprob - max(logprob)));
                     u1 = rand;
-                    sstar = 1;    
+                    sstar = 1;
                     while ( fprob(sstar) < u1 )
                         sstar = sstar + 1;
                     end
-                    switch func2str(fHandles{k})
-                        case 'Multinomial'
-                            for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
-                                countsj(sstar, q, dataForThisContext(i, q), m, k) = countsj(sstar, q, dataForThisContext(i, q), m, k) + 1;
-                            end
-                        case 'Gaussian'
-                            if(size(sumy{sstar, m, k}, 1) == 0)
-                                sumy{sstar, m, k} = dataForThisContext(i, :) * 0;
-                            end
-                            sumy{sstar, m, k} = sumy{sstar, m, k} + dataForThisContext(i, :);
-                    end
-                    nj(sstar, m, k) = nj(sstar, m, k) + 1;
                     s(j, k, m) = sstar;
-                   
+
+                    if(sstar == length(nj{k, m}) + 1) % Adding to a new cluster
+                        nj{k, m} = [nj{k, m} 1];
+                        switch func2str(fHandles{k})
+                            case 'Multinomial'
+                                for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
+                                    countsj(sstar, q, dataForThisContext(j, q), k, m) = countsj(sstar, q, dataForThisContext(j, q), k, m) + 1;
+                                end
+                            case 'Gaussian'
+                                sumy{k, m}(sstar, :) = dataForThisContext(j, :);
+                        end
+                    else
+                        nj{k, m}(sstar) = nj{k, m}(sstar) + 1;
+                        switch func2str(fHandles{k})
+                            case 'Multinomial'
+                                for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
+                                    countsj(sstar, q, dataForThisContext(j, q), k, m) = countsj(sstar, q, dataForThisContext(j, q), k, m) + 1;
+                                end
+                            case 'Gaussian'
+                                sumy{k, m}(sstar, :) = sumy{k, m}(sstar, :) + dataForThisContext(j, :);
+                        end
+                    end                    
+                    
                 end
             end
         end
@@ -1287,50 +1280,144 @@ for n = 1:nGenes
 
 
 
-    elseif (i == nGenes)
-        fprob = cumsum(exp(logweight - max(logweight)));
-        fprob = fprob / fprob(end);
-        
-        u1 = rand / numbofparts;
-        m = 1;
-        iter = 1;
-        while ( m <= numbofparts )
-            while ( (u1 < fprob(m)) && (m <= numbofparts) )
-                partstar(iter) = m;
-                u1 = u1 + 1 / numbofparts;
-                iter = iter + 1;
-            end
-            m = m + 1;
+    elseif (i == nGenes) 
+    fprob = cumsum(exp(logweight - max(logweight)));
+    fprob = fprob / fprob(end);
+    u1 = rand / numbofparts;
+    m = 1;
+    iter = 1;
+    while ( m <= numbofparts )
+        while ( (u1 < fprob(m)) && (m <= numbofparts) )
+            partstar(iter) = m;
+            u1 = u1 + 1 / numbofparts;
+            iter = iter + 1;
         end
-        logweight = logweight(1, partstar);
-        s = s(:, :, partstar);
-        nj = nj(:, partstar, :);
-        if(exist('sumy'))
-            sumy = sumy(:, partstar, :);
-        end
-        if(exist('countsj'))
-            countsj =  countsj(:, :, :, partstar, :);
-        end
+        m = m + 1;
     end
     
-
+    logweight = logweight(1, partstar);
+    s = s(:, :, partstar);
+    nj = nj(:, partstar);
+    if(exist('sumy'))
+        sumy = sumy(:, partstar);
+    end
+    if(exist('countsj'))
+        countsj =  countsj(:, :, :, :, partstar);
+    end
+    %}
+    end
     fprintf(repmat('\b',1,numel(prog_bar)));
 end
 
-if(exist('randIndex'))
-    [B, I] = sort(randIndex);
-    s = s(I, :, :);
-end
-fprob = cumsum(logweight);
-fprob = fprob / fprob(end);
-u1 = rand;
-partstar = 1;
-while ( fprob(partstar) < u1 )
-    partstar = partstar + 1;
-end
-s = s(:, :, partstar);
+%%%%%%%%%%%%%%%
+% The CPF step%
+%%%%%%%%%%%%%%%
 
-% Adding the clusters to the container
+% Specify some values for the particle filter
+sumy = cell(K, numbofparts);
+nj = cell(K, numbofparts);
+s_old = s(:, :, numbofparts);
+s = zeros(nGenes, K, numbofparts);
+sumv_old = sumv(:, numbofparts);
+sumv = zeros(K, numbofparts);
+sumv(:, numbofparts) = sumv_old;
+logweight = zeros(1, numbofparts);
+indx = zeros(1, numbofparts);
+
+% Initialise for the first observation
+for k = 1:K
+    dataForThisContext = clusterContainer(k).data;
+    for m = 1:numbofparts
+        sumy{k, m} = dataForThisContext(1, :);
+        nj{k, m}(1) = 1;
+        logweight(m) = 0;
+        s(1, k, m) = 1;
+    end
+end
+s(1, k, numbofparts) = s_old(1, k);
+logprob = cell(1, k);
+% Run for all other observations
+for n = 2:nGenes
+    weight = exp(logweight - max(logweight));
+    weight = weight / sum(weight);
+    
+    % Update
+    fprob = cumsum(weight);
+    fprob = fprob / fprob(end);
+    
+    for part = 1:(numbofparts - 1) % Hold last trajectory constant
+        u = rand;
+        indx(part) = 1;
+        while( u > fprob(indx(part)))
+            indx(part) = indx(part) + 1;
+        end
+    end
+    indx(numbofparts) = numbofparts;
+    s(1:(n - 1), :, :) = s(1:(n - 1), :, indx);
+    nj = nj(:,indx);
+    sumy = sumy(:, indx);
+    logweight = zeros(1, numbofparts);
+    
+    for m = 1:numbofparts
+        for k = 1:K
+            dataForThisContext = clusterContainer(k).data;
+            prob = [nj{k, m} M]; %/ (sum(nj{k, m}) + M);
+            % prob = [nj{k, m}-gamma (M * (sumv(k, m) + lambda) ^ gamma)];
+            if(length(prob) > nComponents)
+                prob(end) = [];
+            end
+            prob = prob / sum(prob);
+            logprob{1, k} = logProbCalc(dataForThisContext(n, :), clusterContainer, nj{k, m}, sumy{k, m}, a(m), func2str(fHandles{k}));
+
+
+            fprob = cumsum(prob .* exp(logprob{1, k} - max(logprob{1, k})));
+            fprob = fprob / fprob(end);
+            if(m < numbofparts)
+                u1 = rand;
+                s(n, k, m) = 1;
+                while(fprob(s(n, k, m)) < u1)
+                    s(n, k, m) = s(n, k, m) + 1;
+                end
+            elseif(m == numbofparts) % re-specify last particle
+                s(n,k, numbofparts) = s_old(n, k);
+            end
+        end
+        for k = 1:K
+            upWeighting = upWeightCalc(k, nj{k, m}, s(n, :, m), phiVector);
+            prob = [nj{k, m} M] / (sum(nj{k, m}) + M);
+            % prob = [nj{k, m}-gamma (M * (sumv(k, m) + lambda) ^ gamma)];
+            if(length(prob) > nComponents)
+                prob(end) = [];
+            end
+            prob = prob .* upWeighting';
+            pprob = cumsum(prob .* exp(logprob{1, k} - max(logprob{1, k})));
+            logweight(1, m) = logweight(1, m) +  log(pprob(end)) + max(logprob{1, k});
+            % Update running totals
+            if(s(n, k, m) > length(nj{k, m}))
+                nj{k, m}(s(n, k, m)) = 1;
+                sumy{k, m}(s(n, k, m), :) = dataForThisContext(n, :);
+            else
+                nj{k, m}(s(n, k, m)) = nj{k, m}(s(n, k, m)) + 1;
+                sumy{k, m}(s(n, k, m), :) = sumy{k, m}(s(n, k, m), :) + dataForThisContext(n, :);
+            end
+        end
+        
+    end 
+
+end
+
+fprob = cumsum(exp(logweight - max(logweight)));
+fprob = fprob / fprob(end);
+
+u = rand;
+counter = 1;
+while(u > fprob(counter))
+    counter = counter + 1;
+end
+s = s(:, :, counter);
+
+
+% Update the cluster container with the new cluster allocation
 for k = 1:K
     proposedClustersForThisContext = clusterContainer(k).clusterStruct;
     dataForThisContext = clusterContainer(k).data;
@@ -1341,6 +1428,83 @@ for k = 1:K
 end
 
 end
+
+
+function [s sum_y n_j] = particleLabelUpdate(s, sum_y, n_j)
+
+
+end
+
+
+function [logprob_clust] = logProbCalc(data_i, clusterContainer, nj_km, sumy_km, a_m, dataType)
+switch dataType
+    case 'Multinomial'
+        % If a multinomial prior doesn't exist create one using a dirichlet prior
+        if(~exist('mnprior'))
+            numbOfCats = length(clusterContainer(k).clusterStruct(1).dataLevels);
+            mnprior = gamrnd(ones(numbOfCats, clusterContainer(k).clusterStruct(1).nFeatures, K, numbofparts) / 2, 1);
+            mnprior = mnprior ./ repmat(sum(mnprior), numbOfCats, 1, 1, 1);
+        end
+        for ind1 = 1:length(occupiedClusters)
+            ind = occupiedClusters(ind1);
+            clustermnprior = mnprior(:, :, k, m);
+            for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
+                mnprob = clustermnprior(:, q);
+                emp = countsj(ind, q, dataForThisContext(i, q), m, k) * a(m) + mnprob(dataForThisContext(i, q), 1) * (1 - a(m));
+                % emp_prob = emp / (nj(ind, m, k) * a(m) + (1 - a(m)));
+                emp_prob = emp / (nj{k, m}(ind) * a(m) + (1 - a(m)));
+                logprob(1, ind) = logprob(1, ind) + log(emp_prob);
+            end
+        end
+        if(length(unoccupiedClusters)>=1)
+            for q = 1:clusterContainer(k).clusterStruct(1).nFeatures
+                logprob(1, unoccupiedClusters) = mnprob(dataForThisContext(i, q), 1);
+            end
+        end
+    case 'Gaussian'
+        % Calc proposed mu for each cluster
+    mustar = bsxfun(@rdivide, sumy_km / a_m, (nj_km / a_m + 1 / (1 - a_m))');
+    % Add an extra 0 mean for new clusters
+    mustar(end + 1, :) = 0;
+    meanCentred = bsxfun(@minus, mustar, data_i);
+    varStar = [1 ./ (nj_km / a_m + 1 / (1 - a_m)) 1 * (1 - a_m)];
+    sigmaInverse = 1 ./ (varStar + 1 * a_m);
+    % Calculate logprob of each cluster; store for each
+    % dataset for later particle weight calculation
+    % logprob{1, k} = -0.5 * (diag(bsxfun(@times, meanCentred, sigmaInverse')*meanCentred')' + log(prod(sigmaInverse)));
+    nClust = length(nj_km) + 1;
+    % logprob_clust = zeros(1, nClust);
+    nFeat = size(data_i, 2);
+    logprob_clust = -0.5 * (sum(meanCentred .^2, 2)' .* sigmaInverse + nFeat * log(varStar));
+    %for p = 1:nClust
+    %    logprob_clust(1, p) = - 0.5 * (meanCentred(p, :) * meanCentred(p, :)' * sigmaInverse(1, p) + log(min(varStar(1, p) ^ nFeat, realmax)));
+    %end
+end
+end
+
+function [upWeighting] = upWeightCalc (k, nj_km, s_im, phiVector)
+global K phiIndexMatrix doNotPertainToContexti finalIndexMatrix
+    if K > 1
+        phiIndicesForConditional = union(find(phiIndexMatrix(:,1)== k), find(phiIndexMatrix(:,2)== k));
+    else
+        phiIndicesForConditional = [];
+    end
+    % Number of clusters is the number of previous plus one new
+    numberClusters = length(nj_km) + 1;
+    allLabelsMatrix              = (1:numberClusters)'*ones(1,K);
+    notPertinentInThisContext = doNotPertainToContexti(k,:);
+    labelsAcrossAllContexts            = s_im;
+    labelsAcrossAllContextsMatrix      = ones(numberClusters,1)*labelsAcrossAllContexts;
+    labelsAcrossAllContextsMatrix(:,k) = 1:numberClusters;
+    labelAgreementMatrix = (allLabelsMatrix == labelsAcrossAllContextsMatrix);
+    myPhiMatrix          = ones(size(labelAgreementMatrix,1),1)*phiVector;
+    binInd               = labelAgreementMatrix*(2.^(size(labelAgreementMatrix,2)-1:-1:0))';  %bin2dec(num2str(labelAgreementMatrix))
+    finalIndexMatrixRows = finalIndexMatrix(binInd,:);
+    finalIndexMatrixRows(:,notPertinentInThisContext) = false;
+    upWeighting          = finalIndexMatrixRows.*myPhiMatrix;
+    upWeighting          = prod(1+ upWeighting(:,phiIndicesForConditional),2);
+end
+
 %%----------------------------------------------------------------------
 %% INITIALISE THE MCMC FILE --------------------------------------------
 %%----------------------------------------------------------------------
