@@ -1144,17 +1144,15 @@ for i = 2:nGenes
         % and calculate particle weight, upweighted for agreement across
         % datasets
         % Need to do label swapping
-        
-        
+        % s(1:i, :, m) = particleLabelUpdate(s(1:i, :, m));
         
         for k = 1:K
             upWeighting = upWeightCalc(k, nj{k, m}, s(i, :, m), phiVector);
-            
             prob = [nj{k, m} M];
-
             if(length(prob) > nComponents)
                 prob(end) = [];
             end
+            % prob = prob / sum(prob);
             prob = prob .* upWeighting';
             prob = prob / sum(prob);
             pprob = cumsum(prob .* exp(logprob{1, k} - max(logprob{1, k})));
@@ -1384,12 +1382,13 @@ for n = 2:nGenes
         end
         for k = 1:K
             upWeighting = upWeightCalc(k, nj{k, m}, s(n, :, m), phiVector);
-            prob = [nj{k, m} M] / (sum(nj{k, m}) + M);
+            prob = [nj{k, m} M]; % / (sum(nj{k, m}) + M);
             % prob = [nj{k, m}-gamma (M * (sumv(k, m) + lambda) ^ gamma)];
             if(length(prob) > nComponents)
                 prob(end) = [];
             end
             prob = prob .* upWeighting';
+            prob = prob / sum(prob);
             pprob = cumsum(prob .* exp(logprob{1, k} - max(logprob{1, k})));
             logweight(1, m) = logweight(1, m) +  log(pprob(end)) + max(logprob{1, k});
             % Update running totals
@@ -1430,8 +1429,36 @@ end
 end
 
 
-function [s sum_y n_j] = particleLabelUpdate(s, sum_y, n_j)
-
+function [s] = particleLabelUpdate(s)
+global K
+N = length(unique(s));
+for j = 2:K
+    ct = zeros(N, N);
+    for r = 1:N
+        for c = 1:N
+            ct(r, c) = sum((s(:, j - 1) == r) .* (s(:, j) == c));
+        end
+    end
+    % ct = crosstab(s(:, j - 1), s(:, j));
+    d0 = sum(diag(ct)) / sum(sum(ct));
+    for i = 1:(N - 1)
+        for newpos = (i + 1):N;
+            originalInds = s(:, j) == i;
+            originalIndsNewPos = s(:, j) == newpos;
+           
+            order = 1:N;
+            order(newpos) = i;
+            order(i) = newpos;
+            d1 = sum(diag(ct(order, :))) / sum(sum(ct));
+            if(d1 > d0)
+                ct = ct(order, :);
+                d0 = d1;
+                s(originalInds, j) = newpos;
+                s(originalIndsNewPos, j) = i;
+            end
+        end
+    end
+end
 
 end
 
@@ -1490,7 +1517,7 @@ global K phiIndexMatrix doNotPertainToContexti finalIndexMatrix
         phiIndicesForConditional = [];
     end
     % Number of clusters is the number of previous plus one new
-    numberClusters = length(nj_km) + 1;
+    numberClusters = length(nj_km) +1;
     allLabelsMatrix              = (1:numberClusters)'*ones(1,K);
     notPertinentInThisContext = doNotPertainToContexti(k,:);
     labelsAcrossAllContexts            = s_im;
@@ -1503,6 +1530,7 @@ global K phiIndexMatrix doNotPertainToContexti finalIndexMatrix
     finalIndexMatrixRows(:,notPertinentInThisContext) = false;
     upWeighting          = finalIndexMatrixRows.*myPhiMatrix;
     upWeighting          = prod(1+ upWeighting(:,phiIndicesForConditional),2);
+    % upWeighting = ones(size(upWeighting));
 end
 
 %%----------------------------------------------------------------------
