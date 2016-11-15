@@ -1071,6 +1071,7 @@ global K nGenes N phiIndexMatrix finalIndexMatrix fHandles ...
 allComponents = 1:N;
 
 % Empyting the clusters from the previous run to allow the particle filter to run
+% This doesn't need to be done, just do as before
 for k = 1:K
     proposedClustersForThisContext = clusterContainer(k).clusterStruct;
     dataForThisContext = clusterContainer(k).data;
@@ -1080,6 +1081,7 @@ for k = 1:K
     clusterContainer(k).clusterStruct = proposedClustersForThisContext;
 end
 
+%{
 % Specify some values for the particle filter
 s = zeros(nGenes, K, numbofparts);      % The allocation variable
 logweight = zeros(1, numbofparts);      % The log weight per particle
@@ -1302,11 +1304,11 @@ for i = 2:nGenes
     if(exist('countsj'))
         countsj =  countsj(:, :, :, :, partstar);
     end
-    %}
+ 
     end
     fprintf(repmat('\b',1,numel(prog_bar)));
 end
-
+%}
 %%%%%%%%%%%%%%%
 % The CPF step%
 %%%%%%%%%%%%%%%
@@ -1314,13 +1316,14 @@ end
 % Specify some values for the particle filter
 sumy = cell(K, numbofparts);
 nj = cell(K, numbofparts);
-s_old = s(:, :, numbofparts);
+s_old = s;
 s = zeros(nGenes, K, numbofparts);
-sumv_old = sumv(:, numbofparts);
-sumv = zeros(K, numbofparts);
-sumv(:, numbofparts) = sumv_old;
+% sumv_old = sumv(:, numbofparts);
+% sumv = zeros(K, numbofparts);
+% sumv(:, numbofparts) = sumv_old;
 logweight = zeros(1, numbofparts);
 indx = zeros(1, numbofparts);
+M = 1;
 
 % Initialise for the first observation
 for k = 1:K
